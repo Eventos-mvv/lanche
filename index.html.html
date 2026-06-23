@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Check-in Lanche</title>
+<style>
+  :root {
+    --verde: #1D9E75;
+    --verde-claro: #E1F5EE;
+    --verde-texto: #085041;
+    --vermelho: #E24B4A;
+    --vermelho-claro: #FCEBEB;
+    --vermelho-texto: #A32D2D;
+    --azul: #378ADD;
+    --azul-claro: #E6F1FB;
+    --azul-texto: #185FA5;
+    --cinza-bg: #F7F7F5;
+    --cinza-card: #FFFFFF;
+    --cinza-borda: #E2E2DE;
+    --cinza-borda-forte: #C8C8C2;
+    --texto-principal: #1A1A18;
+    --texto-secundario: #6B6B66;
+    --texto-terciario: #9A9A94;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --radius-pill: 99px;
+    --sombra: 0 1px 4px rgba(0,0,0,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--cinza-bg);
+    color: var(--texto-principal);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* ---- HEADER ---- */
+  header {
+    background: var(--cinza-card);
+    border-bottom: 1px solid var(--cinza-borda);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header .logo {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--texto-principal);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  header .logo span {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    background: var(--verde);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 15px;
+  }
+
+  /* ---- TABS ---- */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 1.5rem;
+    background: var(--cinza-card);
+    border-bottom: 1px solid var(--cinza-borda);
+  }
+  .tab-btn {
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--texto-secundario);
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab-btn.active {
+    color: var(--verde);
+    border-bottom-color: var(--verde);
+  }
+  .tab-btn:hover:not(.active) { color: var(--texto-principal); }
+
+  /* ---- LAYOUT ---- */
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ---- CARDS ---- */
+  .card {
+    background: var(--cinza-card);
+    border: 1px solid var(--cinza-borda);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--sombra);
+  }
+
+  /* ---- INPUTS ---- */
+  input[type="text"], input[type="file"] {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid var(--cinza-borda-forte);
+    border-radius: var(--radius);
+    font-size: 15px;
+    color: var(--texto-principal);
+    background: white;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus { border-color: var(--verde); box-shadow: 0 0 0 3px rgba(29,158,117,0.12); }
+
+  /* ---- BOTÕES ---- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 20px;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--verde);
+    color: white;
+    border-color: var(--verde);
+    width: 100%;
+    justify-content: center;
+  }
+  .btn-primary:hover { background: var(--verde-texto); }
+  .btn-secondary {
+    background: white;
+    color: var(--texto-principal);
+    border-color: var(--cinza-borda-forte);
+  }
+  .btn-secondary:hover { background: var(--cinza-bg); }
+  .btn-success {
+    background: var(--verde-claro);
+    color: var(--verde-texto);
+    border-color: #9FE1CB;
+  }
+
+  /* ---- BADGES / PILLS ---- */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: var(--radius-pill);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge-ok { background: var(--verde-claro); color: var(--verde-texto); }
+  .badge-pend { background: var(--azul-claro); color: var(--azul-texto); }
+  .badge-err { background: var(--vermelho-claro); color: var(--vermelho-texto); }
+
+  .equipe-pill {
+    font-size: 11px;
+    padding: 2px 9px;
+    border-radius: var(--radius-pill);
+    font-weight: 500;
+    display: inline-block;
+  }
+
+  /* ---- ALERTS ---- */
+  .alert {
+    display: none;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius);
+    margin-top: 1rem;
+  }
+  .alert.visible { display: flex; }
+  .alert-ok { background: var(--verde-claro); border: 1px solid #9FE1CB; }
+  .alert-err { background: var(--vermelho-claro); border: 1px solid #F7C1C1; }
+  .alert-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+  .alert-title { font-size: 14px; font-weight: 600; }
+  .alert-sub { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+  .alert-ok .alert-title, .alert-ok .alert-sub { color: var(--verde-texto); }
+  .alert-err .alert-title, .alert-err .alert-sub { color: var(--vermelho-texto); }
+
+  /* ---- SUGESTÕES ---- */
+  .sug-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--cinza-borda);
+    border-radius: var(--radius);
+    margin-bottom: 6px;
+    cursor: pointer;
+    background: white;
+    transition: background 0.1s;
+  }
+  .sug-card:hover { background: var(--cinza-bg); }
+  .sug-nome { font-size: 14px; font-weight: 500; color: var(--texto-principal); margin-bottom: 3px; }
+
+  /* ---- ESTATÍSTICAS ---- */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 1.25rem;
+  }
+  .stat-card {
+    background: var(--cinza-card);
+    border: 1px solid var(--cinza-borda);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+    box-shadow: var(--sombra);
+  }
+  .stat-num { font-size: 26px; font-weight: 600; }
+  .stat-label { font-size: 12px; color: var(--texto-secundario); margin-top: 2px; }
+
+  /* ---- LISTA ---- */
+  .list-wrap { max-height: 380px; overflow-y: auto; }
+  .list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--cinza-borda);
+    gap: 12px;
+  }
+  .list-item:last-child { border-bottom: none; }
+  .list-nome { font-size: 13px; font-weight: 500; color: var(--texto-principal); }
+  .list-hora { font-size: 11px; color: var(--texto-terciario); }
+
+  /* ---- DROP ZONE ---- */
+  .drop-zone {
+    border: 2px dashed var(--cinza-borda-forte);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--verde);
+    background: var(--verde-claro);
+  }
+  .drop-icon { font-size: 2.5rem; margin-bottom: 10px; }
+  .drop-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .drop-sub { font-size: 13px; color: var(--texto-secundario); }
+
+  /* ---- INFO BOX ---- */
+  .info-box {
+    background: var(--azul-claro);
+    border: 1px solid #B5D4F4;
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+    font-size: 13px;
+    color: var(--azul-texto);
+  }
+  .info-box strong { font-weight: 600; }
+  .code-block {
+    margin-top: 8px;
+    background: white;
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--texto-secundario);
+    line-height: 1.7;
+  }
+
+  /* ---- FILTROS ---- */
+  .filtros { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filtro-btn {
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--cinza-borda-forte);
+    background: white;
+    color: var(--texto-secundario);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filtro-btn.active { background: var(--verde); color: white; border-color: var(--verde); }
+
+  /* ---- PAINEL HEADER ---- */
+  .painel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .painel-title { font-size: 15px; font-weight: 600; }
+
+  /* ---- CHECK-IN HERO ---- */
+  .checkin-hero {
+    text-align: center;
+    padding: 1.5rem 0 1.75rem;
+  }
+  .checkin-hero .hero-icon {
+    width: 60px;
+    height: 60px;
+    background: var(--verde-claro);
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    margin-bottom: 14px;
+  }
+  .checkin-hero h1 { font-size: 20px; font-weight: 600; margin-bottom: 5px; }
+  .checkin-hero p { font-size: 14px; color: var(--texto-secundario); }
+
+  /* ---- RESPONSIVE ---- */
+  @media (max-width: 480px) {
+    .stats { grid-template-columns: repeat(3, 1fr); }
+    .stat-num { font-size: 20px; }
+    .container { padding: 1rem 0.75rem; }
+    header { padding: 0 1rem; }
+    .tabs { padding: 0 1rem; }
+    .tab-btn { padding: 12px 12px; font-size: 13px; }
+  }
+
+  /* ---- BARRA DE PROGRESSO ---- */
+  .progress-wrap { margin-top: 10px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--texto-secundario); margin-bottom: 5px; }
+  .progress-bar { height: 6px; background: var(--cinza-borda); border-radius: var(--radius-pill); overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--verde); border-radius: var(--radius-pill); transition: width 0.4s ease; }
+
+  .divider { height: 1px; background: var(--cinza-borda); margin: 1rem 0; }
+  .mt1 { margin-top: 1rem; }
+  .mb1 { margin-bottom: 1rem; }
+
+  /* ---- QR DICA ---- */
+  .qr-dica {
+    background: white;
+    border: 1px solid var(--cinza-borda);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+    font-size: 13px;
+    color: var(--texto-secundario);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .qr-dica strong { color: var(--texto-principal); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span>🥗</span>
+    Check-in Lanche
+  </div>
+  <div style="font-size: 13px; color: var(--texto-secundario);" id="header-status">Nenhuma lista carregada</div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('importar')">📂 Importar lista</button>
+  <button class="tab-btn" onclick="switchTab('checkin')">✅ Check-in</button>
+  <button class="tab-btn" onclick="switchTab('painel')">📊 Painel</button>
+</div>
+
+<!-- ========== ABA IMPORTAR ========== -->
+<div class="container">
+<div id="importar" class="screen active">
+
+  <div class="info-box">
+    <strong>Formato do CSV</strong> — duas colunas obrigatórias: <strong>nome</strong> e <strong>equipe</strong>. Exporte direto do Excel como "Salvar como → CSV UTF-8".
+    <div class="code-block">
+      nome,equipe<br>
+      Ana Lima,Logística<br>
+      Bruno Souza,Operações<br>
+      Carla Mendes,Administrativo
+    </div>
+  </div>
+
+  <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-input').click()"
+    ondragover="dzEvent(event,'over')" ondragleave="dzEvent(event,'leave')" ondrop="dzDrop(event)">
+    <div class="drop-icon">📋</div>
+    <p class="drop-title">Clique ou arraste o arquivo CSV aqui</p>
+    <p class="drop-sub">Aceita arquivos .csv exportados do Excel ou Google Sheets</p>
+  </div>
+  <input type="file" id="csv-input" accept=".csv" style="display:none" onchange="lerCSV(event)" />
+
+  <div id="preview-wrap" style="display:none; margin-top:1.25rem;">
+    <div class="card">
+      <div class="painel-header">
+        <div>
+          <p class="painel-title" id="preview-titulo">Pré-visualização</p>
+          <p style="font-size:12px; color:var(--texto-secundario); margin-top:2px;">Confira se os dados estão corretos antes de confirmar</p>
+        </div>
+        <button class="btn btn-success" onclick="confirmarImportacao()">✔ Confirmar importação</button>
+      </div>
+      <div class="list-wrap" id="preview-lista"></div>
+    </div>
+  </div>
+
+  <div id="import-ok" style="display:none; margin-top:1.25rem;">
+    <div class="alert alert-ok visible">
+      <div class="alert-icon">✅</div>
+      <div>
+        <div class="alert-title" id="import-ok-text">Lista importada!</div>
+        <div class="alert-sub">Acesse a aba Check-in para começar.</div>
+      </div>
+    </div>
+    <div class="qr-dica">
+      <div style="font-size:22px; flex-shrink:0;">📌</div>
+      <div>
+        <strong>Como usar com QR code:</strong> hospede este arquivo em qualquer servidor web (ou use o link de compartilhamento público do Google Drive), gere um QR code com a URL e cole na porta. Cada pessoa que ler o código abrirá essa tela direto no check-in.<br><br>
+        <strong>Atenção:</strong> os dados ficam na memória enquanto a página estiver aberta. Não feche ou recarregue o navegador durante o evento — o operador deve deixar a página aberta no dispositivo de controle.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ========== ABA CHECK-IN ========== -->
+<div id="checkin" class="screen">
+  <div class="card">
+    <div class="checkin-hero">
+      <div class="hero-icon">🥗</div>
+      <h1>Check-in para o lanche</h1>
+      <p>Digite seu nome para liberar sua vez</p>
+    </div>
+
+    <input type="text" id="nome-input" placeholder="Seu nome completo..."
+      oninput="filtrarNomes()" onkeydown="if(event.key==='Enter')confirmarCheckin()"
+      autocomplete="off" style="margin-bottom:12px;" />
+
+    <div id="sugestoes" style="margin-bottom:12px;"></div>
+
+    <button class="btn btn-primary" onclick="confirmarCheckin()">✔ Confirmar check-in</button>
+
+    <div id="msg-ok" class="alert alert-ok">
+      <div class="alert-icon">✅</div>
+      <div>
+        <div class="alert-title" id="msg-ok-titulo">Check-in confirmado!</div>
+        <div class="alert-sub" id="msg-ok-sub"></div>
+      </div>
+    </div>
+
+    <div id="msg-err" class="alert alert-err">
+      <div class="alert-icon">⚠️</div>
+      <div>
+        <div class="alert-title" id="msg-err-titulo">Erro</div>
+        <div class="alert-sub" id="msg-err-sub">Verifique seu nome e tente novamente.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== ABA PAINEL ========== -->
+<div id="painel" class="screen">
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-num" id="s-total" style="color:var(--texto-principal)">0</div>
+      <div class="stat-label">Cadastrados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="s-feitos" style="color:var(--verde)">0</div>
+      <div class="stat-label">Confirmados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="s-faltam" style="color:var(--texto-secundario)">0</div>
+      <div class="stat-label">Aguardando</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="progress-wrap" style="display:none; margin-bottom:1.25rem;">
+      <div class="progress-label">
+        <span>Progresso do check-in</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="painel-header">
+      <p class="painel-title">Participantes</p>
+      <div class="filtros">
+        <button class="filtro-btn active" onclick="setFiltro('todos', this)">Todos</button>
+        <button class="filtro-btn" onclick="setFiltro('pendente', this)">Pendentes</button>
+        <button class="filtro-btn" onclick="setFiltro('feito', this)">Confirmados</button>
+      </div>
+    </div>
+
+    <input type="text" id="busca-painel" placeholder="Buscar por nome ou equipe..."
+      oninput="renderLista()" style="margin-bottom:12px;" />
+
+    <div class="list-wrap" id="lista-painel">
+      <p style="text-align:center; color:var(--texto-terciario); font-size:13px; padding:2rem 0;">Nenhuma lista importada ainda.</p>
+    </div>
+  </div>
+
+</div>
+</div><!-- /container -->
+
+<script>
+const PALETA = [
+  ["#E1F5EE","#085041"], ["#E6F1FB","#185FA5"], ["#FAEEDA","#854F0B"],
+  ["#FAECE7","#993C1D"], ["#EEEDFE","#534AB7"], ["#EAF3DE","#3B6D11"],
+  ["#FBEAF0","#993556"], ["#FCEBEB","#A32D2D"], ["#F1EFE8","#444441"],
+];
+const mapaCor = {};
+let idxCor = 0;
+
+function corEq(eq) {
+  if (!mapaCor[eq]) { mapaCor[eq] = PALETA[idxCor++ % PALETA.length]; }
+  return mapaCor[eq];
+}
+
+let pessoas = [];
+let filtroAtual = 'todos';
+let nomeSel = '';
+let dadosPreview = [];
+
+/* ---- NAVEGAÇÃO ---- */
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn, .screen').forEach(el => el.classList.remove('active'));
+  document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById(tab).classList.add('active');
+  if (tab === 'painel') renderLista();
+}
+
+/* ---- DROP ZONE ---- */
+function dzEvent(e, tipo) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.toggle('dragover', tipo === 'over');
+}
+function dzDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('dragover');
+  if (e.dataTransfer.files[0]) processarCSV(e.dataTransfer.files[0]);
+}
+function lerCSV(e) {
+  if (e.target.files[0]) processarCSV(e.target.files[0]);
+}
+
+/* ---- PROCESSAR CSV ---- */
+function processarCSV(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const linhas = e.target.result.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const h = linhas[0].toLowerCase();
+    const inicio = (h.includes('nome') || h.includes('name') || h.includes('equipe')) ? 1 : 0;
+    dadosPreview = [];
+    for (let i = inicio; i < linhas.length; i++) {
+      const p = linhas[i].split(',');
+      if (p.length >= 2 && p[0].trim()) {
+        dadosPreview.push({ nome: p[0].trim(), equipe: p[1].trim(), feito: false, hora: '' });
+      }
+    }
+    mostrarPreview();
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function mostrarPreview() {
+  document.getElementById('import-ok').style.display = 'none';
+  document.getElementById('preview-titulo').textContent = `${dadosPreview.length} pessoa${dadosPreview.length !== 1 ? 's' : ''} encontrada${dadosPreview.length !== 1 ? 's' : ''}`;
+  const lista = document.getElementById('preview-lista');
+  const mostrar = dadosPreview.slice(0, 30);
+  lista.innerHTML = mostrar.map(p => {
+    const [bg, txt] = corEq(p.equipe);
+    return `<div class="list-item">
+      <span class="list-nome">${p.nome}</span>
+      <span class="equipe-pill" style="background:${bg};color:${txt};">${p.equipe}</span>
+    </div>`;
+  }).join('') + (dadosPreview.length > 30 ? `<p style="text-align:center;font-size:12px;color:var(--texto-terciario);padding:10px 0;">...e mais ${dadosPreview.length - 30} pessoa(s)</p>` : '');
+  document.getElementById('preview-wrap').style.display = 'block';
+}
+
+function confirmarImportacao() {
+  pessoas = dadosPreview.map(p => ({ ...p }));
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('import-ok').style.display = 'block';
+  document.getElementById('import-ok-text').textContent = `${pessoas.length} pessoas importadas com sucesso!`;
+  document.getElementById('header-status').textContent = `${pessoas.length} pessoas carregadas`;
+  atualizarStats();
+}
+
+/* ---- CHECK-IN ---- */
+function norm(s) { return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+function filtrarNomes() {
+  nomeSel = '';
+  esconderMsgs();
+  const v = document.getElementById('nome-input').value.trim();
+  const box = document.getElementById('sugestoes');
+  if (v.length < 2) { box.innerHTML = ''; return; }
+  const r = pessoas.filter(p => norm(p.nome).includes(norm(v)));
+  if (!r.length) { box.innerHTML = `<p style="font-size:13px;color:var(--texto-terciario);padding:6px 0;">Nenhum participante encontrado.</p>`; return; }
+  box.innerHTML = r.slice(0, 6).map(p => {
+    const [bg, txt] = corEq(p.equipe);
+    return `<div class="sug-card" onclick="selNome('${p.nome.replace(/'/g,"\\'")}',${p.feito})">
+      <div>
+        <div class="sug-nome">${p.nome}</div>
+        <span class="equipe-pill" style="background:${bg};color:${txt};">${p.equipe}</span>
+      </div>
+      ${p.feito
+        ? `<span class="badge badge-ok">✔ Já fez</span>`
+        : `<span class="badge badge-pend">Pendente</span>`}
+    </div>`;
+  }).join('');
+}
+
+function selNome(nome, feito) {
+  nomeSel = nome;
+  document.getElementById('nome-input').value = nome;
+  document.getElementById('sugestoes').innerHTML = '';
+  if (feito) mostrarErro(`${nome} já fez check-in!`, 'Lanche já registrado anteriormente.');
+}
+
+function confirmarCheckin() {
+  esconderMsgs();
+  const input = document.getElementById('nome-input').value.trim();
+  const nome = nomeSel || input;
+  if (!nome) return;
+  const idx = pessoas.findIndex(p => norm(p.nome) === norm(nome));
+  if (idx === -1) { mostrarErro('Nome não encontrado na lista.', 'Verifique se digitou corretamente.'); return; }
+  if (pessoas[idx].feito) { mostrarErro(`${pessoas[idx].nome} já fez check-in!`, 'Lanche já registrado anteriormente.'); return; }
+  pessoas[idx].feito = true;
+  pessoas[idx].hora = new Date().toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+  mostrarOk(`Check-in de ${pessoas[idx].nome} confirmado!`, `Equipe: ${pessoas[idx].equipe} · Pode pegar seu lanche 🎉`);
+  document.getElementById('nome-input').value = '';
+  nomeSel = '';
+  document.getElementById('sugestoes').innerHTML = '';
+  atualizarStats();
+  setTimeout(esconderMsgs, 6000);
+}
+
+function mostrarOk(t, s) {
+  document.getElementById('msg-ok-titulo').textContent = t;
+  document.getElementById('msg-ok-sub').textContent = s;
+  document.getElementById('msg-ok').classList.add('visible');
+}
+function mostrarErro(t, s) {
+  document.getElementById('msg-err-titulo').textContent = t;
+  document.getElementById('msg-err-sub').textContent = s;
+  document.getElementById('msg-err').classList.add('visible');
+}
+function esconderMsgs() {
+  document.getElementById('msg-ok').classList.remove('visible');
+  document.getElementById('msg-err').classList.remove('visible');
+}
+
+/* ---- PAINEL ---- */
+function setFiltro(f, btn) {
+  filtroAtual = f;
+  document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderLista();
+}
+
+function atualizarStats() {
+  const feitos = pessoas.filter(p => p.feito).length;
+  const total = pessoas.length;
+  const pct = total ? Math.round((feitos / total) * 100) : 0;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-feitos').textContent = feitos;
+  document.getElementById('s-faltam').textContent = total - feitos;
+  const pw = document.getElementById('progress-wrap');
+  if (total > 0) {
+    pw.style.display = 'block';
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-pct').textContent = pct + '%';
+  } else {
+    pw.style.display = 'none';
+  }
+}
+
+function renderLista() {
+  atualizarStats();
+  const busca = norm(document.getElementById('busca-painel').value);
+  const lista = pessoas.filter(p => {
+    const mb = !busca || norm(p.nome).includes(busca) || norm(p.equipe).includes(busca);
+    const mf = filtroAtual === 'todos' || (filtroAtual === 'feito' && p.feito) || (filtroAtual === 'pendente' && !p.feito);
+    return mb && mf;
+  });
+  const el = document.getElementById('lista-painel');
+  if (!lista.length) {
+    el.innerHTML = `<p style="text-align:center;color:var(--texto-terciario);font-size:13px;padding:2rem 0;">Nenhum resultado.</p>`;
+    return;
+  }
+  el.innerHTML = lista.map(p => {
+    const [bg, txt] = corEq(p.equipe);
+    return `<div class="list-item">
+      <div>
+        <div class="list-nome">${p.nome}</div>
+        <span class="equipe-pill" style="background:${bg};color:${txt};">${p.equipe}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+        ${p.feito
+          ? `<span class="list-hora">${p.hora}</span><span class="badge badge-ok">✔ Confirmado</span>`
+          : `<span class="badge badge-err">Pendente</span>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
