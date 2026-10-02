@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Caravanas · Painel</title>
+<style>
+:root{
+  color-scheme:dark;
+  --noite:#0a0705; --painel:#15100c; --areia:#d4a26a; --areia-2:#e3b982;
+  --texto:#f3eee8; --suave:rgba(243,238,232,.62); --linha:rgba(243,238,232,.18);
+  --erro:#ffb4a2;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--noite);color:var(--texto);font-family:'Poppins',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
+h1{margin:0 0 4px;font-size:24px;font-weight:600;color:var(--areia-2)}
+.meta{margin:0 0 20px;color:var(--suave);font-size:13px}
+.card{background:var(--painel);border:1px solid var(--linha);border-radius:14px;padding:18px}
+button{font:inherit;cursor:pointer;border:1px solid var(--areia);background:transparent;color:var(--areia-2);border-radius:10px;padding:10px 14px}
+button.principal{background:var(--areia);color:#1a0f07;font-weight:600}
+button:hover{filter:brightness(1.1)}
+input,select{font:inherit;background:#0f0b08;color:var(--texto);border:1px solid var(--linha);border-radius:10px;padding:10px 12px;min-width:0}
+.barra,.ferr{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.barra{justify-content:space-between;color:var(--suave);font-size:13px}
+.ferr input{flex:1 1 200px}
+.msg{color:var(--erro);margin:10px 0 0;min-height:1em}
+.total{color:var(--suave);margin:0 0 10px;font-size:13px}
+.tabela{overflow-x:auto;border:1px solid var(--linha);border-radius:12px}
+table{width:100%;border-collapse:collapse;min-width:1000px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--linha);vertical-align:top}
+th{position:sticky;top:0;background:#1d1510;color:var(--areia-2);font-weight:600;font-size:13px}
+tr:last-child td{border-bottom:0}
+td a{color:var(--areia-2)}
+.zap{display:inline-block;margin-left:8px;font-size:12px;border:1px solid var(--areia);border-radius:999px;padding:2px 9px;text-decoration:none}
+.vazio{padding:24px;text-align:center;color:var(--suave)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1 id="titulo">Caravanas inscritas</h1>
+  <p class="meta" id="subtitulo"></p>
+
+  <section class="card" id="login">
+    <p style="margin-top:0">Entre com a conta Google que está liberada no gestor.</p>
+    <button class="principal" id="btnLogin">Entrar com Google</button>
+    <p class="msg" id="msgLogin"></p>
+  </section>
+
+  <section id="painel" hidden>
+    <div class="barra">
+      <span id="quem"></span>
+      <button id="btnSair">Sair</button>
+    </div>
+    <div class="ferr">
+      <select id="evento" aria-label="Escolher evento" hidden></select>
+      <input id="busca" type="search" placeholder="Buscar…" aria-label="Buscar">
+      <select id="ordem" aria-label="Ordenar por"></select>
+      <button id="btnAtualizar">Atualizar</button>
+      <button class="principal" id="btnXlsx">Baixar Excel</button>
+    </div>
+    <p class="total" id="total"></p>
+    <div class="tabela">
+      <table>
+        <thead><tr id="cabeca"></tr></thead>
+        <tbody id="corpo"></tbody>
+      </table>
+      <div class="vazio" id="vazio" hidden>Nenhuma caravana encontrada.</div>
+    </div>
+    <p class="msg" id="msgPainel"></p>
+  </section>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC6_DDTRZmiQdDbn6ClOxel7bZCxYmlAI8",
+  authDomain: "equipe-de-trabalho-ae029.firebaseapp.com",
+  projectId: "equipe-de-trabalho-ae029",
+  storageBucket: "equipe-de-trabalho-ae029.firebasestorage.app",
+  messagingSenderId: "832841108199",
+  appId: "1:832841108199:web:df1c65102b94e0105f7042"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* ------------------------------------------------------------------
+   EVENTOS
+   Quem pode ver cada coleção é definido nas REGRAS DO FIRESTORE.
+   A página tenta ler as duas; só aparece o que a conta tiver permissão.
+------------------------------------------------------------------- */
+const cidadeUf = c => (c.cidade || '') + (c.estado ? '/' + c.estado : '');
+const EVENTOS = {
+  homens: {
+    nome: 'Homens',
+    titulo: 'Caravanas inscritas · Homens',
+    subtitulo: '15 a 17 de out · Verbo Estação · Campina Grande',
+    colecao: 'caravanas',
+    arquivo: 'caravanas-homens.xlsx',
+    ordens: [['igreja','Igreja'],['lider','Líder'],['cidade','Cidade'],['pastor','Pastor']],
+    busca: 'Buscar por igreja, líder, cidade, pastor…',
+    colunas: [
+      {th:'Igreja',           get:c => c.igreja,        xl:['Igreja', 30]},
+      {th:'Cidade/UF',        get:cidadeUf,             xl:['Cidade', 22], xl2:['UF', 5]},
+      {th:'Líder',            get:c => c.lider,         xl:['Líder', 28]},
+      {th:'Telefone',         get:c => c.telefone,      zap:true, xl:['Telefone', 18]},
+      {th:'Pastor',           get:c => c.pastor,        xl:['Pastor', 28]},
+      {th:'Celular do pastor',get:c => c.celularPastor, zap:true, xl:['Celular do pastor', 18]},
+      {th:'Inscrita em',      get:c => fmtData(c.criadoEm), xl:['Inscrita em', 14]}
+    ]
+  },
+  mulheres: {
+    nome: 'Mulheres',
+    titulo: 'Caravanas inscritas · Mulheres',
+    subtitulo: 'Conferência de Mulheres',
+    colecao: 'caravanas_mulheres',
+    arquivo: 'caravanas-mulheres.xlsx',
+    ordens: [['cidade','Cidade'],['lider','Líder'],['pastor','Pastor']],
+    busca: 'Buscar por líder, cidade, pastor, esposa…',
+    colunas: [
+      {th:'Cidade/UF',        get:cidadeUf,             xl:['Cidade', 22], xl2:['UF', 5]},
+      {th:'Líder',            get:c => c.lider,         xl:['Líder', 28]},
+      {th:'Celular',          get:c => c.telefone,      zap:true, xl:['Celular da líder', 18]},
+      {th:'Pastor',           get:c => c.pastor,        xl:['Pastor', 28]},
+      {th:'Esposa do pastor', get:c => c.esposaPastor,  xl:['Esposa do pastor', 28]},
+      {th:'Celular dela',     get:c => c.celularEsposa, zap:true, xl:['Celular da esposa', 18]},
+      {th:'Observações',      get:c => c.observacao,    xl:['Observações', 40]},
+      {th:'Inscrita em',      get:c => fmtData(c.criadoEm), xl:['Inscrita em', 14]}
+    ]
+  }
+};
+
+const $ = id => document.getElementById(id);
+let dados = {};      // { chave: [registros] } só dos eventos liberados
+let atual = null;    // chave do evento em exibição
+
+const az = (a, b) => (a || '').toString().localeCompare((b || '').toString(), 'pt-BR', {sensitivity:'base'});
+const norm = s => (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const digits = v => (v || '').toString().replace(/\D/g, '');
+function fmtData(ts){
+  return ts && ts.toDate ? ts.toDate().toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '';
+}
+
+function zapLink(tel){
+  let d = digits(tel);
+  if(d.length < 10) return '';
+  if(!(d.length >= 12 && d.startsWith('55'))) d = '55' + d;
+  return 'https://wa.me/' + d;
+}
+function addZap(td, tel){
+  const link = zapLink(tel);
+  if(!link) return;
+  const a = document.createElement('a');
+  a.className = 'zap'; a.href = link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'WhatsApp';
+  td.appendChild(a);
+}
+
+function visiveis(){
+  const lista = dados[atual] || [];
+  const q = norm($('busca').value.trim());
+  const campo = $('ordem').value;
+  return lista
+    .filter(c => !q || norm(Object.values(c).filter(v => typeof v === 'string').join(' ')).includes(q))
+    .sort((a, b) => az(a[campo], b[campo]) || az(a.cidade, b.cidade) || az(a.lider, b.lider));
+}
+
+function desenhar(){
+  if(!atual) return;
+  const ev = EVENTOS[atual];
+  const itens = visiveis();
+  const corpo = $('corpo');
+  corpo.textContent = '';
+  itens.forEach(c => {
+    const tr = document.createElement('tr');
+    ev.colunas.forEach(col => {
+      const td = document.createElement('td');
+      td.textContent = col.get(c) || '';
+      tr.appendChild(td);
+      if(col.zap) addZap(td, col.get(c));
+    });
+    corpo.appendChild(tr);
+  });
+  const total = dados[atual].length;
+  $('vazio').hidden = itens.length > 0;
+  $('total').textContent = itens.length === total
+    ? total + ' caravana(s) inscrita(s)'
+    : itens.length + ' de ' + total + ' caravana(s)';
+}
+
+function montarEvento(chave){
+  atual = chave;
+  const ev = EVENTOS[chave];
+  $('titulo').textContent = ev.titulo;
+  $('subtitulo').textContent = ev.subtitulo;
+  $('busca').placeholder = ev.busca;
+  $('busca').value = '';
+  $('ordem').innerHTML = ev.ordens.map(o => '<option value="' + o[0] + '">Ordem A–Z: ' + o[1] + '</option>').join('');
+  const cab = $('cabeca');
+  cab.textContent = '';
+  ev.colunas.forEach(col => {
+    const th = document.createElement('th');
+    th.textContent = col.th;
+    cab.appendChild(th);
+  });
+  desenhar();
+}
+
+async function carregar(){
+  $('msgPainel').textContent = '';
+  const chaves = Object.keys(EVENTOS);
+  const res = await Promise.allSettled(chaves.map(k => db.collection(EVENTOS[k].colecao).get()));
+  dados = {};
+  let falhaRede = false;
+  res.forEach((r, i) => {
+    if(r.status === 'fulfilled'){
+      dados[chaves[i]] = r.value.docs.map(d => d.data());
+    }else if(!r.reason || r.reason.code !== 'permission-denied'){
+      console.error(r.reason);
+      falhaRede = true;
+    }
+  });
+
+  const liberados = Object.keys(dados);
+  const sel = $('evento');
+  sel.innerHTML = liberados.map(k => '<option value="' + k + '">' + EVENTOS[k].nome + '</option>').join('');
+  sel.hidden = liberados.length < 2;
+
+  if(!liberados.length){
+    atual = null;
+    $('corpo').textContent = '';
+    $('cabeca').textContent = '';
+    $('total').textContent = '';
+    $('vazio').hidden = true;
+    $('msgPainel').textContent = falhaRede
+      ? 'Não consegui carregar agora. Verifique a internet e toque em Atualizar.'
+      : 'Esta conta não tem permissão para ver as caravanas. Entre com a conta liberada no gestor.';
+    return;
+  }
+  const manter = liberados.includes(atual) ? atual : liberados[0];
+  sel.value = manter;
+  montarEvento(manter);
+  if(falhaRede) $('msgPainel').textContent = 'Um dos eventos não carregou. Toque em Atualizar para tentar de novo.';
+}
+
+function baixarExcel(){
+  const ev = EVENTOS[atual];
+  const itens = visiveis();
+  if(!itens.length){ $('msgPainel').textContent = 'Não há caravanas para baixar.'; return; }
+  const cols = [];
+  ev.colunas.forEach(col => {
+    if(col.xl2){
+      cols.push({h:col.xl[0], w:col.xl[1], f:c => c.cidade || ''});
+      cols.push({h:col.xl2[0], w:col.xl2[1], f:c => c.estado || ''});
+    }else{
+      cols.push({h:col.xl[0], w:col.xl[1], f:c => col.get(c) || ''});
+    }
+  });
+  const linhas = itens.map(c => {
+    const o = {};
+    cols.forEach(k => o[k.h] = k.f(c));
+    return o;
+  });
+  const ws = XLSX.utils.json_to_sheet(linhas);
+  ws['!cols'] = cols.map(k => ({wch:k.w}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Caravanas');
+  XLSX.writeFile(wb, ev.arquivo);
+}
+
+$('btnLogin').onclick = async () => {
+  $('msgLogin').textContent = '';
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try{
+    await auth.signInWithPopup(provider);
+  }catch(e){
+    console.error(e);
+    if(e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment'){
+      auth.signInWithRedirect(provider);
+    }else if(e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request'){
+      $('msgLogin').textContent = 'Não consegui entrar (' + (e.code || 'erro') + ').';
+    }
+  }
+};
+$('btnSair').onclick = () => auth.signOut();
+$('btnAtualizar').onclick = carregar;
+$('btnXlsx').onclick = baixarExcel;
+$('busca').oninput = desenhar;
+$('ordem').onchange = desenhar;
+$('evento').onchange = e => montarEvento(e.target.value);
+
+auth.onAuthStateChanged(user => {
+  $('login').hidden = !!user;
+  $('painel').hidden = !user;
+  if(user){
+    $('quem').textContent = 'Conectado como ' + (user.email || '');
+    carregar();
+  }else{
+    dados = {}; atual = null;
+    $('corpo').textContent = '';
+    $('titulo').textContent = 'Caravanas inscritas';
+    $('subtitulo').textContent = '';
+  }
+});
+</script>
+</body>
+</html>
