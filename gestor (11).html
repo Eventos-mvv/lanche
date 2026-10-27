@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#18212b">
+<title>Gestão de Eventos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#18212b;
+    --ink-2:#3d4754;
+    --muted:#6a7380;
+    --bg:#eef0ec;
+    --surface:#ffffff;
+    --line:#dcdfd8;
+    --line-2:#e8eae5;
+    --accent:#0e6b57;
+    --accent-ink:#0a5545;
+    --accent-soft:#e1efe9;
+    --amber:#8f5300;
+    --amber-soft:#fbefd9;
+    --red:#b42318;
+    --red-soft:#fce9e7;
+    --side:#18212b;
+    --side-line:rgba(255,255,255,.08);
+    --side-text:#a9b2bd;
+    --r-lg:12px;
+    --r:8px;
+    --ease:cubic-bezier(.2,.7,.2,1);
+    /* nomes antigos usados pelo código */
+    --text:var(--ink);
+    --text-muted:var(--muted);
+    --border:var(--line);
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{margin:0;font-family:"Instrument Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  button,input,select{font:inherit;color:inherit;}
+  svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  #app{display:flex;min-height:100vh;min-height:100dvh;}
+
+  /* MENU LATERAL */
+  .sidebar{width:252px;flex:none;background:var(--side);color:var(--side-text);display:flex;flex-direction:column;padding:22px 12px 18px;position:sticky;top:0;height:100vh;height:100dvh;overflow-y:auto;}
+  .brand{padding:2px 12px 22px;margin-bottom:10px;border-bottom:1px solid var(--side-line);}
+  .brand strong{display:block;color:#fff;font-size:16px;font-weight:700;letter-spacing:-.01em;}
+  .brand span{font-size:13px;color:var(--side-text);}
+  .nav-heading{padding:16px 12px 6px;font-size:12px;font-weight:600;color:#6f7a87;}
+  .nav-single,.nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;margin:1px 0;border-radius:var(--r);font-size:14.5px;font-weight:500;color:var(--side-text);text-decoration:none;cursor:pointer;user-select:none;transition:background-color .15s,color .15s;}
+  .nav-single:hover,.nav-item:hover{background:rgba(255,255,255,.06);color:#fff;}
+  .nav-single.active,.nav-item.active{background:rgba(255,255,255,.1);color:#fff;font-weight:600;box-shadow:inset 3px 0 0 #6fc3a8;}
+  .nav-single.last{margin-top:auto;}
+  .scrim{display:none;}
+
+  /* ÁREA PRINCIPAL */
+  .main{flex:1;min-width:0;}
+  .appbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:12px;height:60px;padding:0 32px;background:rgba(238,240,236,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-bottom:1px solid transparent;}
+  .appbar-title{display:none;font-weight:700;font-size:16px;}
+  .mobile-toggle{display:none;width:40px;height:40px;margin-left:-8px;border:0;border-radius:var(--r);background:none;cursor:pointer;align-items:center;justify-content:center;}
+  .mobile-toggle:hover{background:rgba(24,33,43,.06);}
+  .topbar{margin-left:auto;}
+  .avatar-user{display:flex;align-items:center;gap:9px;height:38px;padding:0 12px 0 4px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:13.5px;font-weight:600;cursor:pointer;transition:border-color .15s;}
+  .avatar-user:hover{border-color:#b9beb5;}
+  .avatar-user b{width:30px;height:30px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:12px;letter-spacing:.02em;}
+  .content{padding:8px 32px 56px;max-width:1120px;}
+  .page{display:none;}
+  .page.active{display:block;animation:entra .25s var(--ease);}
+  @keyframes entra{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  h2.page-title{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin:10px 0 24px;}
+  .lead{max-width:620px;color:var(--ink-2);font-size:15px;line-height:1.6;}
+
+  /* CAMPOS */
+  .filters{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;max-width:860px;}
+  .field label{display:block;font-size:13.5px;font-weight:600;color:var(--ink-2);margin-bottom:6px;}
+  select,input[type=text],input[type=email],input[type=password],input[type=date],input[type=search]{
+    width:100%;height:44px;padding:0 13px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-size:15px;color:var(--ink);appearance:none;-webkit-appearance:none;transition:border-color .15s,box-shadow .15s;
+  }
+  select{padding-right:38px;cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236a7380' stroke-width='2' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 13px center;}
+  input::placeholder{color:#9aa1a9;}
+  select:hover,input:hover{border-color:#c3c8c0;}
+  select:focus,input:focus{outline:0;border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,107,87,.15);}
+
+  /* PLACAR DO CHECK-IN */
+  .placar{max-width:860px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);margin-bottom:20px;overflow:hidden;}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);}
+  .stat-card{padding:20px 22px 16px;}
+  .stat-card + .stat-card{border-left:1px solid var(--line-2);}
+  .stat-card .num{font-size:44px;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;}
+  .stat-card .label{color:var(--muted);font-size:14px;margin-top:8px;}
+  .stat-card:nth-child(2) .num{color:var(--accent);}
+  .progress-wrap{display:flex;align-items:center;gap:14px;padding:14px 22px;border-top:1px solid var(--line-2);background:#fafbf9;}
+  .progress-bar{flex:1;height:8px;background:var(--line-2);border-radius:99px;overflow:hidden;}
+  .progress-fill{height:100%;background:var(--accent);border-radius:99px;transition:width .4s var(--ease);}
+  .progress-pct{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;width:46px;text-align:right;}
+
+  /* BUSCA E LISTA */
+  .search-wrap{position:relative;max-width:860px;margin-bottom:14px;}
+  .search-wrap input{padding-left:42px;}
+  .search-wrap .icon-search{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);display:flex;pointer-events:none;}
+  .list{max-width:860px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;}
+  .row{display:flex;align-items:center;gap:14px;padding:13px 16px;border-bottom:1px solid var(--line-2);}
+  .row:last-child{border-bottom:none;}
+  .avatar{width:38px;height:38px;border-radius:50%;background:#e6e9e3;color:var(--ink-2);display:grid;place-items:center;font-weight:700;font-size:13.5px;flex:none;}
+  .row-info{flex:1;min-width:0;}
+  .row-info .name{font-weight:600;font-size:15px;}
+  .row-info .sub{color:var(--muted);font-size:13px;margin-top:1px;}
+  .row-actions{display:flex;align-items:center;gap:8px;}
+  .btn-check,.btn-undo{border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:var(--r);padding:0 16px;height:40px;font-size:14px;font-weight:600;white-space:nowrap;transition:background-color .15s,border-color .15s,transform .1s;}
+  .btn-check:active:not(:disabled),.btn-undo:active:not(:disabled){transform:scale(.97);}
+  .btn-check.pending{background:var(--accent);color:#fff;}
+  .btn-check.pending:hover{background:var(--accent-ink);}
+  .btn-check.done{background:var(--accent-soft);color:var(--accent-ink);cursor:default;}
+  .btn-undo{background:var(--surface);border-color:var(--line);color:var(--ink-2);}
+  .btn-undo:hover:not(:disabled){border-color:#c3c8c0;color:var(--red);}
+  .btn-undo:disabled{color:#b6bbb3;cursor:not-allowed;}
+  .empty-state{padding:44px 20px;text-align:center;color:var(--muted);}
+
+  /* BOTÕES */
+  .toolbar{display:flex;gap:10px;margin-bottom:18px;max-width:1000px;flex-wrap:wrap;align-items:center;}
+  .toolbar .sep{flex:1;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 15px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);font-size:14px;font-weight:600;cursor:pointer;color:var(--ink);white-space:nowrap;transition:background-color .15s,border-color .15s;}
+  .btn:hover{border-color:#c3c8c0;background:#fafbf9;}
+  .btn-primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .btn-primary:hover{background:#0f161e;border-color:#0f161e;}
+  .btn-danger{color:var(--red);}
+  .btn-danger:hover{background:var(--red-soft);border-color:#f2c4bf;}
+  input[type=file]{display:none;}
+
+  /* TABELAS */
+  .table-wrap{max-width:1000px;overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);}
+  table{width:100%;border-collapse:collapse;background:var(--surface);}
+  th,td{text-align:left;padding:12px 16px;font-size:14px;border-bottom:1px solid var(--line-2);}
+  th{color:var(--muted);font-weight:600;font-size:13px;background:#fafbf9;white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  tbody tr:hover td{background:#fbfcfa;}
+  td.actions{white-space:nowrap;text-align:right;}
+  .link-btn{background:none;border:none;color:var(--ink-2);cursor:pointer;font-size:13.5px;font-weight:600;padding:6px 8px;border-radius:6px;}
+  .link-btn:hover{background:var(--bg);color:var(--ink);}
+  .link-btn.danger{color:var(--red);}
+  .link-btn.danger:hover{background:var(--red-soft);}
+
+  /* NÚMEROS DO PAINEL */
+  .panel-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));max-width:1000px;margin-bottom:24px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;}
+  .panel-card{padding:18px 20px;border-right:1px solid var(--line-2);margin-right:-1px;}
+  .panel-card .num{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums;}
+  .panel-card .label{color:var(--muted);font-size:13.5px;margin-top:4px;}
+
+  /* EVENTOS */
+  .evento-card{max-width:860px;margin-bottom:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;}
+  .evento-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 16px 14px 18px;border-bottom:1px solid var(--line-2);}
+  .evento-head strong{font-size:16.5px;}
+  .evento-head .acoes{display:flex;gap:4px;flex-wrap:wrap;}
+  .culto{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px 10px 18px;border-bottom:1px solid var(--line-2);font-size:14.5px;}
+  .culto:last-child{border-bottom:0;}
+  .culto.vazio{color:var(--muted);}
+
+  /* ETIQUETAS */
+  .tag{display:inline-block;padding:2px 9px;margin:0 4px 4px 0;border-radius:999px;font-size:12.5px;font-weight:600;line-height:1.5;}
+  .tag-alerta{background:var(--amber-soft);color:var(--amber);}
+  .tag-alergia{background:var(--red-soft);color:var(--red);}
+  .tag-ok{background:#eef0ec;color:var(--muted);font-weight:500;}
+  .tag-verde{background:var(--accent-soft);color:var(--accent-ink);}
+
+  /* DEPARTAMENTO INFANTIL */
+  .inf-grupo{max-width:1000px;margin-bottom:24px;}
+  .inf-grupo h3{display:flex;align-items:baseline;gap:10px;font-size:17px;font-weight:700;margin:0 0 10px;}
+  .inf-grupo h3 small{font-size:13.5px;font-weight:500;color:var(--muted);}
+  .inf-scroll{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);}
+  .inf-scroll table{min-width:760px;table-layout:fixed;}
+  .inf-scroll th:nth-child(1){width:18%;} .inf-scroll th:nth-child(2){width:11%;} .inf-scroll th:nth-child(3){width:29%;}
+  .inf-scroll th:nth-child(4){width:18%;} .inf-scroll th:nth-child(5){width:24%;}
+  .inf-scroll td{vertical-align:top;}
+  .inf-nome{font-weight:600;}
+  .inf-sub{color:var(--muted);font-size:13px;margin-top:2px;}
+
+  /* JANELAS */
+  .modal-overlay{position:fixed;inset:0;background:rgba(18,25,33,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .modal-overlay.active{display:flex;animation:fundo .2s ease;}
+  .modal{background:var(--surface);border-radius:14px;padding:24px;width:100%;max-width:460px;max-height:88vh;max-height:88dvh;overflow-y:auto;box-shadow:0 24px 60px rgba(18,25,33,.25);}
+  .modal-overlay.active .modal{animation:sobe .25s var(--ease);}
+  .modal h3{margin:0 0 18px;font-size:19px;font-weight:700;letter-spacing:-.01em;}
+  .modal .field{margin-bottom:14px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;}
+  .modal-sec{border-top:1px solid var(--line-2);margin-top:18px;padding-top:18px;}
+  .modal-sec h4{margin:0 0 2px;font-size:15px;font-weight:700;}
+  .modal-sec p{margin:0 0 12px;font-size:13.5px;color:var(--muted);}
+  small.hint{color:var(--muted);display:block;margin-top:-4px;font-size:13px;line-height:1.45;}
+  @keyframes fundo{from{opacity:0}to{opacity:1}}
+  @keyframes sobe{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+  /* LOGIN */
+  #modalLogin{position:fixed;inset:0;z-index:200;display:flex;background:var(--bg);}
+  .login-lado{flex:0 0 42%;background:var(--side);color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between;}
+  .login-lado .marca{font-size:15px;font-weight:600;color:var(--side-text);}
+  .login-lado h2{margin:0;font-size:clamp(30px,3.4vw,44px);line-height:1.1;letter-spacing:-.025em;font-weight:700;max-width:12ch;}
+  .login-lado p{margin:16px 0 0;color:var(--side-text);font-size:15.5px;max-width:34ch;line-height:1.55;}
+  .login-lado small{color:#6f7a87;font-size:13px;}
+  .login-form{flex:1;display:flex;align-items:center;justify-content:center;padding:32px 24px;}
+  .login-box{width:100%;max-width:360px;}
+  .login-box h3{margin:0 0 6px;font-size:24px;font-weight:700;letter-spacing:-.02em;}
+  .login-box .ajuda{margin:0 0 26px;color:var(--muted);font-size:14.5px;}
+  .login-box .field{margin-bottom:16px;}
+  .senha-wrap{position:relative;}
+  .senha-wrap input{padding-right:76px;}
+  .ver-senha{position:absolute;right:6px;top:50%;transform:translateY(-50%);height:32px;padding:0 10px;border:0;border-radius:6px;background:none;color:var(--ink-2);font-size:13px;font-weight:600;cursor:pointer;}
+  .ver-senha:hover{background:var(--bg);}
+  #loginErr{color:var(--red);font-size:13.5px;min-height:20px;margin:-4px 0 10px;}
+  #btnLogin{width:100%;height:46px;font-size:15px;}
+
+  /* AVISO */
+  .toast{position:fixed;bottom:24px;left:50%;width:max-content;background:var(--ink);color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;font-weight:500;box-shadow:0 10px 30px rgba(18,25,33,.25);opacity:0;transform:translate(-50%,10px);transition:opacity .2s,transform .2s var(--ease);pointer-events:none;z-index:300;max-width:calc(100% - 32px);}
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  /* CELULAR E TABLET */
+  @media (max-width:860px){
+    .sidebar{position:fixed;left:0;top:0;bottom:0;height:auto;width:min(280px,84vw);z-index:60;transform:translateX(-100%);transition:transform .25s var(--ease);}
+    .sidebar.open{transform:none;box-shadow:12px 0 40px rgba(0,0,0,.25);}
+    .sidebar.open + .scrim{display:block;position:fixed;inset:0;background:rgba(18,25,33,.45);z-index:55;animation:fundo .2s ease;}
+    .appbar{padding:0 16px;border-bottom-color:var(--line);background:rgba(255,255,255,.94);}
+    .appbar-title{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+    .mobile-toggle{display:inline-flex;}
+    .avatar-user{padding:0 4px;}
+    .avatar-user span{display:none;}
+    .content{padding:4px 16px 48px;}
+    h2.page-title{font-size:24px;margin:16px 0 18px;}
+    .filters{grid-template-columns:1fr;gap:12px;}
+    .stat-card{padding:16px 14px 12px;}
+    .stat-card .num{font-size:32px;}
+    .stat-card .label{font-size:13px;}
+    .progress-wrap{padding:12px 14px;}
+    .row{flex-wrap:wrap;padding:12px 14px;}
+    .row-actions{width:100%;}
+    .btn-check{flex:1;height:44px;}
+    .btn-undo{height:44px;}
+    .toolbar .btn{flex:1 1 auto;}
+    .panel-cards{grid-template-columns:1fr 1fr;}
+    .panel-card{border-bottom:1px solid var(--line-2);margin-bottom:-1px;}
+    .modal-overlay{align-items:flex-end;padding:0;}
+    .modal{max-width:none;border-radius:16px 16px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));max-height:92dvh;}
+    .modal-actions .btn{flex:1;}
+    #modalLogin{flex-direction:column;overflow-y:auto;}
+    .login-lado{flex:none;padding:28px 22px 30px;gap:28px;}
+    .login-lado h2{font-size:28px;max-width:none;}
+    .login-lado small{display:none;}
+    .login-form{align-items:flex-start;padding:28px 22px 40px;}
+    .toast{bottom:calc(16px + env(safe-area-inset-bottom));}
+    .cards-mobile{overflow:hidden;}
+    .cards-mobile table,.cards-mobile tbody,.cards-mobile tr,.cards-mobile td{display:block;width:auto!important;min-width:0!important;}
+    .cards-mobile table{table-layout:auto;}
+    .cards-mobile thead{display:none;}
+    .cards-mobile tr{display:grid!important;grid-template-columns:1fr 1fr;gap:6px 14px;padding:14px 16px;border-bottom:1px solid var(--line-2);}
+    .cards-mobile td:first-child,.cards-mobile td.actions,.cards-mobile td[data-label="Evento"],.cards-mobile td[data-label^="Condição"],.cards-mobile td[data-label="Responsável"]{grid-column:1/-1;}
+    .cards-mobile tr:last-child{border-bottom:0;}
+    .cards-mobile td{border:0;padding:4px 0;font-size:14.5px;}
+    .cards-mobile td[data-label]::before{content:attr(data-label);display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:1px;}
+    .cards-mobile td[data-label="Alergia ou restrição"]{order:2;} .cards-mobile td[data-label^="Condição"]{order:3;} .cards-mobile td[data-label="Responsável"]{order:4;}
+    .cards-mobile td:first-child{font-size:16px;font-weight:600;padding-bottom:2px;}
+    .cards-mobile td.actions{text-align:left;padding-top:8px;margin-left:-8px;}
+    .cards-mobile tbody tr:hover td{background:none;}
+  }
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- MENU LATERAL -->
+  <nav class="sidebar" id="sidebar" aria-label="Menu principal">
+    <div class="brand">
+      <strong>Gestão de Eventos</strong>
+      <span>Ministério Verbo da Vida</span>
+    </div>
+
+    <div class="nav-single active" data-page="painel" tabindex="0">
+      <svg class="i" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg> Painel
+    </div>
+
+    <div class="nav-heading">Lanches</div>
+    <a class="nav-item active" data-page="checkin" tabindex="0">
+      <svg class="i" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg> Check-in
+    </a>
+    <a class="nav-item" data-page="historico" tabindex="0">
+      <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Histórico
+    </a>
+
+    <div class="nav-heading">Cadastros</div>
+    <a class="nav-item" data-page="eventos" tabindex="0">
+      <svg class="i" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg> Eventos
+    </a>
+    <a class="nav-item" data-page="colaboradores" tabindex="0">
+      <svg class="i" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/></svg> Colaboradores
+    </a>
+
+    <div class="nav-heading">Crianças</div>
+    <div class="nav-single" data-page="infantil" tabindex="0">
+      <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 10h.01M15 10h.01M9.5 15a3.5 3.5 0 0 0 5 0"/></svg> Departamento Infantil
+    </div>
+  </nav>
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ÁREA PRINCIPAL -->
+  <div class="main">
+    <header class="appbar">
+      <button class="mobile-toggle" id="mobileToggle" aria-label="Abrir menu">
+        <svg class="i" viewBox="0 0 24 24" style="width:22px;height:22px"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="appbar-title" id="appbarTitle">Check-in de lanches</div>
+      <div class="topbar">
+        <button class="avatar-user" type="button" onclick="document.getElementById('userInitials').click()" title="Minha conta">
+          <b id="userInitials">?</b><span>Minha conta</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+
+    <!-- PAINEL -->
+    <section class="page" id="page-painel">
+      <h2 class="page-title">Painel</h2>
+      <div class="panel-cards">
+        <div class="panel-card"><div class="num" id="pc-eventos">0</div><div class="label">Eventos cadastrados</div></div>
+        <div class="panel-card"><div class="num" id="pc-colab">0</div><div class="label">Colaboradores cadastrados</div></div>
+        <div class="panel-card"><div class="num" id="pc-checkins-hoje">0</div><div class="label">Check-ins hoje</div></div>
+      </div>
+      <p class="lead">
+        Para registrar as retiradas de lanche, abra <strong>Check-in</strong> no menu.
+        Se a lista de colaboradores ainda não estiver pronta, cadastre em <strong>Colaboradores</strong>, um por um ou importando uma planilha CSV.
+      </p>
+    </section>
+
+    <!-- CHECK-IN -->
+    <section class="page active" id="page-checkin">
+      <h2 class="page-title">Check-in de lanches</h2>
+
+      <div class="filters">
+        <div class="field">
+          <label for="selEvento">Evento</label>
+          <select id="selEvento"></select>
+        </div>
+        <div class="field">
+          <label for="selCulto">Culto</label>
+          <select id="selCulto"></select>
+        </div>
+      </div>
+
+      <div class="placar">
+        <div class="stats">
+          <div class="stat-card"><div class="num" id="statTotal">0</div><div class="label">Colaboradores</div></div>
+          <div class="stat-card"><div class="num" id="statRetiraram">0</div><div class="label">Já retiraram</div></div>
+          <div class="stat-card"><div class="num" id="statFaltam">0</div><div class="label">Faltam</div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+          <div class="progress-pct" id="progressPct">0%</div>
+        </div>
+      </div>
+
+      <div class="search-wrap">
+        <span class="icon-search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+        <input type="search" id="searchInput" placeholder="Buscar por nome, equipe ou líder">
+      </div>
+
+      <div class="list" id="checkinList"></div>
+    </section>
+
+    <!-- HISTÓRICO -->
+    <section class="page" id="page-historico">
+      <h2 class="page-title">Histórico</h2>
+      <div class="toolbar">
+        <button class="btn" id="btnExportHistorico">Exportar CSV</button>
+        <button class="btn btn-danger" id="btnClearHistorico">Limpar histórico</button>
+      </div>
+      <div class="table-wrap">
+        <table id="tblHistorico">
+          <thead><tr><th>Data e hora</th><th>Colaborador</th><th>Evento</th><th>Culto</th><th>Ação</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- EVENTOS -->
+    <section class="page" id="page-eventos">
+      <h2 class="page-title">Eventos</h2>
+      <div class="toolbar">
+        <button class="btn btn-primary" id="btnNovoEvento">Novo evento</button>
+      </div>
+      <div id="eventosList"></div>
+    </section>
+
+    <!-- COLABORADORES -->
+    <section class="page" id="page-colaboradores">
+      <h2 class="page-title">Colaboradores</h2>
+      <div class="toolbar">
+        <button class="btn btn-primary" id="btnNovoColab">Adicionar colaborador</button>
+        <button class="btn" id="btnImportCsv">Importar CSV</button>
+        <button class="btn" id="btnModeloCsv">Baixar modelo</button>
+        <button class="btn" id="btnRemoverDuplicados">Remover duplicados</button>
+        <button class="btn btn-danger" id="btnLimparColab">Apagar todos</button>
+        <input type="file" id="fileCsv" accept=".csv">
+      </div>
+      <div class="search-wrap">
+        <span class="icon-search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+        <input type="search" id="searchColab" placeholder="Buscar colaborador">
+      </div>
+      <div class="table-wrap cards-mobile">
+        <table id="tblColab">
+          <thead><tr><th>Nome</th><th>Equipe</th><th>Líder</th><th>Evento</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- DEPARTAMENTO INFANTIL -->
+    <section class="page" id="page-infantil">
+      <h2 class="page-title">Departamento Infantil</h2>
+      <div class="filters" style="grid-template-columns:1fr;max-width:420px;">
+        <div class="field"><label for="infEvento">Evento</label><select id="infEvento"></select></div>
+      </div>
+      <div class="panel-cards">
+        <div class="panel-card"><div class="num" id="infTotal">0</div><div class="label">Crianças</div></div>
+        <div class="panel-card"><div class="num" id="infVolunt">0</div><div class="label">Voluntários com filhos</div></div>
+        <div class="panel-card"><div class="num" id="infCond">0</div><div class="label">Com condição atípica</div></div>
+        <div class="panel-card"><div class="num" id="infAlerg">0</div><div class="label">Com alergia ou restrição</div></div>
+      </div>
+      <div class="toolbar">
+        <button class="btn btn-primary" id="btnExportInfantil">Exportar planilha</button>
+      </div>
+      <div class="search-wrap">
+        <span class="icon-search"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+        <input type="search" id="searchInfantil" placeholder="Buscar criança, voluntário, equipe ou condição">
+      </div>
+      <div id="infantilList"></div>
+    </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- JANELA: colaborador -->
+<div class="modal-overlay" id="modalColab">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalColabTitle">
+    <h3 id="modalColabTitle">Adicionar colaborador</h3>
+    <div class="field"><label for="fNome">Nome</label><input type="text" id="fNome" placeholder="Nome completo"></div>
+    <div class="field"><label for="fEquipe">Equipe</label><input type="text" id="fEquipe" placeholder="Ex.: Recepção"></div>
+    <div class="field"><label for="fLider">Líder</label><input type="text" id="fLider" placeholder="Ex.: Maria Souza"></div>
+    <div class="field"><label for="fEvento">Evento</label><select id="fEvento"></select></div>
+    <div class="modal-actions">
+      <button class="btn" data-close="modalColab">Cancelar</button>
+      <button class="btn btn-primary" id="btnSalvarColab">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- JANELA: novo evento -->
+<div class="modal-overlay" id="modalEvento">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Novo evento</h3>
+    <div class="field"><label for="fEventoNome">Nome do evento</label><input type="text" id="fEventoNome" placeholder="Ex.: Conferência de Cura"></div>
+    <div class="field"><label for="fCultoLabel">Primeiro culto (opcional)</label><input type="text" id="fCultoLabel" placeholder="Ex.: Quinta-Noite, 06/11"></div>
+    <small class="hint">Os outros cultos podem ser adicionados depois, na tela de Eventos.</small>
+    <div class="modal-actions">
+      <button class="btn" data-close="modalEvento">Cancelar</button>
+      <button class="btn btn-primary" id="btnSalvarEvento">Criar evento</button>
+    </div>
+  </div>
+</div>
+
+<!-- JANELA: novo culto -->
+<div class="modal-overlay" id="modalCulto">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Adicionar culto</h3>
+    <input type="hidden" id="fCultoEventoId">
+    <div class="field"><label for="fCultoLabel2">Descrição do culto</label><input type="text" id="fCultoLabel2" placeholder="Ex.: Sábado-Noite, 08/11"></div>
+    <small class="hint">É esse texto que o voluntário vê no chat para marcar o dia em que vai servir.</small>
+    <div class="modal-actions">
+      <button class="btn" data-close="modalCulto">Cancelar</button>
+      <button class="btn btn-primary" id="btnSalvarCulto">Adicionar culto</button>
+    </div>
+  </div>
+</div>
+
+<!-- JANELA: mesclar eventos -->
+<div class="modal-overlay" id="modalMerge">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Mesclar evento</h3>
+    <input type="hidden" id="fMergeOrigemId">
+    <p style="font-size:14.5px;color:var(--ink-2);margin:-6px 0 16px;">Todos os colaboradores de <strong id="mergeOrigemNome"></strong> vão para o evento escolhido abaixo. Depois disso, o evento de origem é excluído.</p>
+    <div class="field">
+      <label for="fMergeDestino">Mover para</label>
+      <select id="fMergeDestino"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" data-close="modalMerge">Cancelar</button>
+      <button class="btn btn-primary" id="btnConfirmarMerge">Mesclar eventos</button>
+    </div>
+  </div>
+</div>
+
+<!-- JANELA: minha conta -->
+<div class="modal-overlay" id="modalUsuario">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3>Minha conta</h3>
+    <div style="font-size:15px;font-weight:700;" id="uNome"></div>
+    <div style="font-size:14px;color:var(--muted);" id="uEmail"></div>
+    <div id="boxNovoUsuario" class="modal-sec">
+      <h4>Liberar acesso para outra pessoa</h4>
+      <p>Ela poderá entrar no gestor e fazer o check-in de lanches.</p>
+      <div class="field"><label for="nuNome">Nome</label><input type="text" id="nuNome" placeholder="Nome da pessoa"></div>
+      <div class="field"><label for="nuEmail">E-mail</label><input type="email" id="nuEmail" placeholder="email@exemplo.com" autocomplete="off"></div>
+      <div class="field"><label for="nuSenha">Senha inicial</label><input type="text" id="nuSenha" placeholder="Mínimo de 6 caracteres" autocomplete="off"></div>
+      <div id="nuMsg" style="font-size:13.5px;min-height:18px;"></div>
+      <button class="btn btn-primary" id="btnNovoUsuario" style="width:100%;margin-top:6px;">Liberar acesso</button>
+      <h4 style="margin-top:20px;">Pessoas com acesso</h4>
+      <div id="listaUsuarios" style="font-size:13.5px;color:var(--muted);"></div>
+    </div>
+    <div class="modal-sec">
+      <h4>Cópia de segurança</h4>
+      <p>Eventos, colaboradores, check-ins e histórico salvos neste aparelho.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn" id="btnBackup">Baixar cópia</button>
+        <button class="btn" id="btnRestaurar">Restaurar cópia</button>
+        <input type="file" id="fileRestaurar" accept=".json,application/json" style="display:none;">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="btnSair">Sair da conta</button>
+      <button class="btn" data-close="modalUsuario">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div id="modalLogin" style="display:flex;">
+  <aside class="login-lado">
+    <div class="marca">Ministério Verbo da Vida</div>
+    <div>
+      <h2>Gestão de Eventos</h2>
+      <p>Check-in de lanches, equipe de trabalho e Departamento Infantil, tudo no mesmo lugar.</p>
+    </div>
+    <small>Acesso restrito à equipe de Eventos.</small>
+  </aside>
+  <div class="login-form">
+    <form class="login-box" onsubmit="return false;">
+      <h3>Entrar</h3>
+      <p class="ajuda">Use o e-mail e a senha liberados pelo administrador.</p>
+      <div class="field"><label for="loginEmail">E-mail</label><input type="email" id="loginEmail" autocomplete="username" placeholder="seu@email.com"></div>
+      <div class="field"><label for="loginSenha">Senha</label>
+        <div class="senha-wrap">
+          <input type="password" id="loginSenha" autocomplete="current-password" placeholder="Sua senha">
+          <button type="button" class="ver-senha" id="verSenha" aria-label="Mostrar senha">Mostrar</button>
+        </div>
+      </div>
+      <div id="loginErr" role="alert"></div>
+      <button type="button" class="btn btn-primary" id="btnLogin">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+/* ---------------- DATA LAYER (localStorage) ---------------- */
+const LS_CONFIG = 'lanches_config_v1';
+const LS_PARTICIPANTES = 'lanches_participantes_v1';
+const LS_CHECKINS = 'lanches_checkins_v1';
+const LS_HISTORICO = 'lanches_historico_v1';
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+/* ---------------- FIREBASE (integração com o formulário de voluntários) ---------------- */
+// COLE AQUI o firebaseConfig do seu projeto (o mesmo usado no formulário)
+const firebaseConfig = {
+  apiKey: "AIzaSyC6_DDTRZmiQdDbn6ClOxel7bZCxYmlAI8",
+  authDomain: "equipe-de-trabalho-ae029.firebaseapp.com",
+  projectId: "equipe-de-trabalho-ae029",
+  storageBucket: "equipe-de-trabalho-ae029.firebasestorage.app",
+  messagingSenderId: "832841108199",
+  appId: "1:832841108199:web:df1c65102b94e0105f7042"
+};
+let auth = null;
+let db = null;
+let _initErr = '';
+try{
+  if(typeof firebase === 'undefined') throw new Error('Scripts do Firebase não carregaram (sem internet, bloqueio de gstatic.com ou extensão/adblock).');
+  firebase.initializeApp(firebaseConfig);
+  try{ db = firebase.firestore(); }catch(e){ console.error(e); _initErr += 'Firestore: '+(e.code||e.message)+' '; }
+  try{ auth = firebase.auth(); }catch(e){ console.error(e); _initErr += 'Auth: '+(e.code||e.message)+' '; }
+}catch(e){ console.error(e); _initErr = (e.code||e.message); }
+const nomeKey = n => normalizeHeader(n||'');
+let _pubTimer = null;
+// publica eventos/cultos e a lista de nomes já cadastrados para o formulário usar
+function publicar(){
+  if(!db) return;
+  if(!auth || !auth.currentUser) return;
+  clearTimeout(_pubTimer);
+  _pubTimer = setTimeout(()=>{
+    const cfg = JSON.parse(localStorage.getItem(LS_CONFIG)||'{"eventos":[]}');
+    if(!cfg.eventos || cfg.eventos.length===0) return; // proteção: não apaga os eventos do Firebase
+    const parts = JSON.parse(localStorage.getItem(LS_PARTICIPANTES)||'[]');
+    const nomes = {};
+    parts.forEach(p=>{ (nomes[p.eventoId] = nomes[p.eventoId]||[]).push(nomeKey(p.nome)); });
+    db.collection('lanches_config').doc('publico').set({eventos:cfg.eventos, nomes, atualizadoEm:Date.now()}).catch(console.error);
+  }, 600);
+}
+
+function loadConfig(){
+  let c = JSON.parse(localStorage.getItem(LS_CONFIG) || 'null');
+  if(!c){
+    c = { eventos: [] };
+    saveConfig(c);
+  }
+  return c;
+}
+function saveConfig(c){ localStorage.setItem(LS_CONFIG, JSON.stringify(c)); publicar(); }
+
+function loadParticipantes(){ return JSON.parse(localStorage.getItem(LS_PARTICIPANTES) || '[]'); }
+function saveParticipantes(p){ localStorage.setItem(LS_PARTICIPANTES, JSON.stringify(p)); publicar(); }
+
+function loadCheckins(){ return JSON.parse(localStorage.getItem(LS_CHECKINS) || '{}'); }
+function saveCheckins(c){ localStorage.setItem(LS_CHECKINS, JSON.stringify(c)); }
+
+function loadHistorico(){ return JSON.parse(localStorage.getItem(LS_HISTORICO) || '[]'); }
+function saveHistorico(h){ localStorage.setItem(LS_HISTORICO, JSON.stringify(h)); }
+
+function checkinKey(eventoId, cultoId, participanteId){
+  return eventoId+'__'+cultoId+'__'+participanteId;
+}
+
+/* ---------------- TOAST ---------------- */
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ---------------- NAV ---------------- */
+document.querySelectorAll('.nav-group-label').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    document.getElementById(el.dataset.toggle).classList.toggle('collapsed');
+  });
+});
+
+function goToPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.nav-item, .nav-single').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll(`[data-page="${page}"]`).forEach(n=>n.classList.add('active'));
+  if(page==='painel') renderPainel();
+  if(page==='checkin') renderCheckinFilters();
+  if(page==='historico') renderHistorico();
+  if(page==='eventos') renderEventosPage();
+  if(page==='colaboradores') renderColabTable();
+  if(page==='infantil') renderInfantil();
+  document.getElementById('sidebar').classList.remove('open');
+  const tit = document.querySelector('#page-'+page+' .page-title');
+  if(tit) document.getElementById('appbarTitle').textContent = tit.textContent;
+  window.scrollTo({top:0});
+}
+document.getElementById('scrim').addEventListener('click', ()=>document.getElementById('sidebar').classList.remove('open'));
+document.querySelectorAll('[data-page]').forEach(el=>el.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); el.click(); } }));
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ document.getElementById('sidebar').classList.remove('open'); document.querySelectorAll('.modal-overlay.active').forEach(m=>m.classList.remove('active')); } });
+document.getElementById('verSenha').addEventListener('click', ()=>{
+  const i = document.getElementById('loginSenha'), b = document.getElementById('verSenha');
+  const ver = i.type==='password'; i.type = ver ? 'text' : 'password';
+  b.textContent = ver ? 'Ocultar' : 'Mostrar'; b.setAttribute('aria-label', ver ? 'Ocultar senha' : 'Mostrar senha');
+});
+document.getElementById('loginEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('loginSenha').focus(); });
+document.querySelectorAll('[data-page]').forEach(el=>{
+  el.addEventListener('click', ()=>goToPage(el.dataset.page));
+});
+document.getElementById('mobileToggle').addEventListener('click', ()=>{
+  document.getElementById('sidebar').classList.toggle('open');
+});
+
+/* ---------------- MODAL HELPERS ---------------- */
+function openModal(id){ document.getElementById(id).classList.add('active'); }
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+document.querySelectorAll('[data-close]').forEach(b=>{
+  b.addEventListener('click', ()=>closeModal(b.dataset.close));
+});
+document.querySelectorAll('.modal-overlay').forEach(ov=>{
+  ov.addEventListener('click', (e)=>{ if(e.target===ov) ov.classList.remove('active'); });
+});
+
+/* ---------------- PAINEL ---------------- */
+function renderPainel(){
+  const config = loadConfig();
+  const participantes = loadParticipantes();
+  const historico = loadHistorico();
+  document.getElementById('pc-eventos').textContent = config.eventos.length;
+  document.getElementById('pc-colab').textContent = participantes.length;
+  const hoje = new Date().toDateString();
+  const hojeCount = historico.filter(h => h.acao==='checkin' && new Date(h.data).toDateString()===hoje).length;
+  document.getElementById('pc-checkins-hoje').textContent = hojeCount;
+}
+
+/* ---------------- EVENTO/CULTO SELECT HELPERS ---------------- */
+function populateEventoSelect(selectEl, includeEmpty){
+  const config = loadConfig();
+  selectEl.innerHTML = '';
+  if(includeEmpty){
+    const opt = document.createElement('option');
+    opt.value=''; opt.textContent='Selecione um evento';
+    selectEl.appendChild(opt);
+  }
+  config.eventos.forEach(ev=>{
+    const opt = document.createElement('option');
+    opt.value = ev.id; opt.textContent = ev.nome;
+    selectEl.appendChild(opt);
+  });
+}
+
+/* ---------------- CHECK-IN PAGE ---------------- */
+function renderCheckinFilters(){
+  const config = loadConfig();
+  const selEvento = document.getElementById('selEvento');
+  const selCulto = document.getElementById('selCulto');
+  const prevEvento = selEvento.value;
+  populateEventoSelect(selEvento, false);
+
+  if(config.eventos.length===0){
+    selEvento.innerHTML = '<option value="">Nenhum evento cadastrado</option>';
+    selCulto.innerHTML = '<option value="">—</option>';
+    renderCheckinList();
+    return;
+  }
+  if(prevEvento && config.eventos.find(e=>e.id===prevEvento)) selEvento.value = prevEvento;
+  populateCultoSelect();
+  renderCheckinList();
+}
+function populateCultoSelect(){
+  const config = loadConfig();
+  const evento = config.eventos.find(e=>e.id===document.getElementById('selEvento').value);
+  const selCulto = document.getElementById('selCulto');
+  const prevCulto = selCulto.value;
+  selCulto.innerHTML = '';
+  if(!evento || evento.cultos.length===0){
+    selCulto.innerHTML = '<option value="">Nenhum culto cadastrado</option>';
+    return;
+  }
+  evento.cultos.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.label;
+    selCulto.appendChild(opt);
+  });
+  if(evento.cultos.find(c=>c.id===prevCulto)) selCulto.value = prevCulto;
+}
+document.getElementById('selEvento').addEventListener('change', ()=>{
+  populateCultoSelect();
+  renderCheckinList();
+});
+document.getElementById('selCulto').addEventListener('change', renderCheckinList);
+document.getElementById('searchInput').addEventListener('input', renderCheckinList);
+
+function initials(name){
+  const parts = name.trim().split(/\s+/);
+  return (parts[0]?.[0] || '').toUpperCase();
+}
+
+function renderCheckinList(){
+  const eventoId = document.getElementById('selEvento').value;
+  const cultoId = document.getElementById('selCulto').value;
+  const listEl = document.getElementById('checkinList');
+  const participantes = loadParticipantes().filter(p=>p.eventoId===eventoId && (!p.cultoIds || p.cultoIds.includes(cultoId)));
+  const checkins = loadCheckins();
+  const q = (document.getElementById('searchInput').value || '').toLowerCase();
+
+  const total = participantes.length;
+  const retiraram = participantes.filter(p=>checkins[checkinKey(eventoId,cultoId,p.id)]).length;
+  const faltam = total - retiraram;
+  const pct = total>0 ? Math.round((retiraram/total)*100) : 0;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statRetiraram').textContent = retiraram;
+  document.getElementById('statFaltam').textContent = faltam;
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressPct').textContent = pct+'%';
+
+  let filtered = participantes.filter(p=>{
+    if(!q) return true;
+    return p.nome.toLowerCase().includes(q) || (p.equipe||'').toLowerCase().includes(q) || (p.lider||'').toLowerCase().includes(q);
+  });
+  // já retiraram primeiro ficam ao final? Mantém ordem alfabética, com pendentes primeiro
+  filtered = filtered.slice().sort((a,b)=>{
+    const aDone = !!checkins[checkinKey(eventoId,cultoId,a.id)];
+    const bDone = !!checkins[checkinKey(eventoId,cultoId,b.id)];
+    if(aDone!==bDone) return aDone?1:-1;
+    return a.nome.localeCompare(b.nome);
+  });
+
+  if(!eventoId || !cultoId){
+    listEl.innerHTML = `<div class="empty-state">Escolha o evento e o culto para começar o check-in.<br><br>
+      <button class="btn btn-primary" onclick="goToPage('eventos')">Cadastrar evento</button></div>`;
+    return;
+  }
+  if(filtered.length===0){
+    listEl.innerHTML = `<div class="empty-state">Nenhum colaborador encontrado para esse culto.<br><br>
+      <button class="btn btn-primary" onclick="goToPage('colaboradores')">Adicionar colaboradores</button></div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(p=>{
+    const key = checkinKey(eventoId,cultoId,p.id);
+    const done = !!checkins[key];
+    const sub = p.equipe ? `${p.equipe}${p.lider?', líder '+p.lider:''}` : 'Credencial';
+    return `
+      <div class="row">
+        <div class="avatar">${initials(p.nome)}</div>
+        <div class="row-info">
+          <div class="name">${escapeHtml(p.nome)}</div>
+          <div class="sub">${escapeHtml(sub)}</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn-check ${done ? 'done' : 'pending'}" title="${done ? 'Já retirado' : 'Confirmar retirada'}" data-id="${p.id}" data-action="check" ${done ? 'disabled' : ''}>
+            ${done ? 'Retirado' : 'Confirmar retirada'}
+          </button>
+          <button class="btn-undo" title="Desfazer retirada" data-id="${p.id}" data-action="undo" ${done ? '' : 'disabled'}>
+            Desfazer
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+
+  listEl.querySelectorAll('[data-action]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const pid = btn.dataset.id;
+      const action = btn.dataset.action;
+      const checkins = loadCheckins();
+      const key = checkinKey(eventoId,cultoId,pid);
+      const p = participantes.find(x=>x.id===pid);
+      const historico = loadHistorico();
+      if(action==='check' && !checkins[key]){
+        checkins[key] = new Date().toISOString();
+        saveCheckins(checkins);
+        historico.unshift({data:new Date().toISOString(), participante:p.nome, eventoId, cultoId, acao:'checkin'});
+        saveHistorico(historico);
+        toast(`${p.nome} — lanche confirmado`);
+      } else if(action==='undo'){
+        delete checkins[key];
+        saveCheckins(checkins);
+        historico.unshift({data:new Date().toISOString(), participante:p.nome, eventoId, cultoId, acao:'desfeito'});
+        saveHistorico(historico);
+        toast(`${p.nome} — check-in desfeito`);
+      }
+      renderCheckinList();
+    });
+  });
+}
+
+function escapeHtml(str){
+  return (str||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* ---------------- HISTÓRICO ---------------- */
+function eventoNome(id){ const c=loadConfig(); return c.eventos.find(e=>e.id===id)?.nome || '—'; }
+function cultoLabel(eventoId,cultoId){ const c=loadConfig(); const ev=c.eventos.find(e=>e.id===eventoId); return ev?.cultos.find(x=>x.id===cultoId)?.label || '—'; }
+
+function renderHistorico(){
+  const h = loadHistorico();
+  const tbody = document.querySelector('#tblHistorico tbody');
+  if(h.length===0){
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--text-muted);text-align:center;padding:30px;">Nenhum registro ainda.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = h.map(r=>`
+    <tr>
+      <td>${new Date(r.data).toLocaleString('pt-BR')}</td>
+      <td>${escapeHtml(r.participante)}</td>
+      <td>${escapeHtml(eventoNome(r.eventoId))}</td>
+      <td>${escapeHtml(cultoLabel(r.eventoId,r.cultoId))}</td>
+      <td>${r.acao==='checkin' ? '<span class="tag tag-verde">Retirou</span>' : '<span class="tag tag-ok">Desfeito</span>'}</td>
+    </tr>`).join('');
+}
+document.getElementById('btnClearHistorico').addEventListener('click', ()=>{
+  if(confirm('Limpar todo o histórico? Isso não afeta os check-ins já feitos.')){
+    saveHistorico([]);
+    renderHistorico();
+    toast('Histórico limpo');
+  }
+});
+document.getElementById('btnExportHistorico').addEventListener('click', ()=>{
+  const h = loadHistorico();
+  let csv = 'data,colaborador,evento,culto,acao\n';
+  h.forEach(r=>{
+    csv += `"${new Date(r.data).toLocaleString('pt-BR')}","${r.participante}","${eventoNome(r.eventoId)}","${cultoLabel(r.eventoId,r.cultoId)}","${r.acao}"\n`;
+  });
+  downloadFile('historico-lanches.csv', csv);
+});
+
+/* ---------------- EVENTOS PAGE ---------------- */
+function renderEventosPage(){
+  const config = loadConfig();
+  const el = document.getElementById('eventosList');
+  if(config.eventos.length===0){
+    el.innerHTML = `<div class="list"><div class="empty-state">Nenhum evento cadastrado. Crie o primeiro em <strong>Novo evento</strong>.</div></div>`;
+    return;
+  }
+  el.innerHTML = config.eventos.map(ev=>`
+    <div class="evento-card">
+      <div class="evento-head">
+        <strong>${escapeHtml(ev.nome)}</strong>
+        <div class="acoes">
+          <button class="link-btn" data-add-culto="${ev.id}">Adicionar culto</button>
+          <button class="link-btn" data-merge="${ev.id}">Mesclar</button>
+          <button class="link-btn danger" data-del-evento="${ev.id}">Excluir</button>
+        </div>
+      </div>
+      ${ev.cultos.length===0 ? `<div class="culto vazio">Nenhum culto cadastrado ainda.</div>` :
+        ev.cultos.map(c=>`<div class="culto"><span>${escapeHtml(c.label)}</span><button class="link-btn danger" data-del-culto="${ev.id}|${c.id}">Remover</button></div>`).join('')}
+    </div>`).join('');
+
+  el.querySelectorAll('[data-add-culto]').forEach(b=>b.addEventListener('click', ()=>{
+    document.getElementById('fCultoEventoId').value = b.dataset.addCulto;
+    document.getElementById('fCultoLabel2').value = '';
+    openModal('modalCulto');
+  }));
+  el.querySelectorAll('[data-merge]').forEach(b=>b.addEventListener('click', ()=>{
+    const origemId = b.dataset.merge;
+    const config = loadConfig();
+    const origem = config.eventos.find(e=>e.id===origemId);
+    document.getElementById('fMergeOrigemId').value = origemId;
+    document.getElementById('mergeOrigemNome').textContent = origem.nome;
+    const destSel = document.getElementById('fMergeDestino');
+    destSel.innerHTML = '';
+    config.eventos.filter(e=>e.id!==origemId).forEach(e=>{
+      const opt = document.createElement('option');
+      opt.value = e.id; opt.textContent = e.nome;
+      destSel.appendChild(opt);
+    });
+    if(config.eventos.length<2){
+      toast('Crie outro evento antes de mesclar');
+      return;
+    }
+    openModal('modalMerge');
+  }));
+  el.querySelectorAll('[data-del-evento]').forEach(b=>b.addEventListener('click', ()=>{
+    if(!confirm('Excluir este evento e todos os seus cultos? Colaboradores vinculados perderão o evento.')) return;
+    const config = loadConfig();
+    config.eventos = config.eventos.filter(e=>e.id!==b.dataset.delEvento);
+    saveConfig(config);
+    renderEventosPage();
+    toast('Evento excluído');
+  }));
+  el.querySelectorAll('[data-del-culto]').forEach(b=>b.addEventListener('click', ()=>{
+    const [eventoId,cultoId] = b.dataset.delCulto.split('|');
+    const config = loadConfig();
+    const ev = config.eventos.find(e=>e.id===eventoId);
+    ev.cultos = ev.cultos.filter(c=>c.id!==cultoId);
+    saveConfig(config);
+    renderEventosPage();
+    toast('Culto excluído');
+  }));
+}
+document.getElementById('btnConfirmarMerge').addEventListener('click', ()=>{
+  const origemId = document.getElementById('fMergeOrigemId').value;
+  const destinoId = document.getElementById('fMergeDestino').value;
+  if(!destinoId || destinoId===origemId){ toast('Selecione um evento de destino diferente'); return; }
+
+  const config = loadConfig();
+  const origem = config.eventos.find(e=>e.id===origemId);
+  const destino = config.eventos.find(e=>e.id===destinoId);
+  if(!origem || !destino) return;
+
+  // 1) mapeia cultos da origem para cultos equivalentes (por nome) no destino, criando quando não existir
+  const cultoMap = {}; // origemCultoId -> destinoCultoId
+  origem.cultos.forEach(c=>{
+    let match = destino.cultos.find(dc => normalizeHeader(dc.label) === normalizeHeader(c.label));
+    if(!match){
+      match = { id: uid(), label: c.label };
+      destino.cultos.push(match);
+    }
+    cultoMap[c.id] = match.id;
+  });
+
+  // 2) move colaboradores da origem pro destino
+  let participantes = loadParticipantes();
+  let movidos = 0;
+  participantes.forEach(p=>{
+    if(p.eventoId===origemId){ if(p.cultoIds) p.cultoIds = p.cultoIds.map(x=>cultoMap[x]||x); p.eventoId = destinoId; movidos++; }
+  });
+  saveParticipantes(participantes);
+
+  // 3) migra check-ins já feitos (troca a chave evento_culto_participante da origem pra do destino)
+  const checkins = loadCheckins();
+  const novosCheckins = {};
+  Object.keys(checkins).forEach(key=>{
+    const [ev, cu, pid] = key.split('__');
+    if(ev===origemId){
+      const novoCultoId = cultoMap[cu] || cu;
+      novosCheckins[checkinKey(destinoId, novoCultoId, pid)] = checkins[key];
+    } else {
+      novosCheckins[key] = checkins[key];
+    }
+  });
+  saveCheckins(novosCheckins);
+
+  // 4) remove o evento de origem
+  config.eventos = config.eventos.filter(e=>e.id!==origemId);
+  saveConfig(config);
+
+  closeModal('modalMerge');
+  renderEventosPage();
+  toast(`${movidos} colaborador(es) movido(s) para "${destino.nome}"`);
+});
+document.getElementById('btnNovoEvento').addEventListener('click', ()=>{
+  document.getElementById('fEventoNome').value='';
+  document.getElementById('fCultoLabel').value='';
+  openModal('modalEvento');
+});
+document.getElementById('btnSalvarEvento').addEventListener('click', ()=>{
+  const nome = document.getElementById('fEventoNome').value.trim();
+  const cultoLabel = document.getElementById('fCultoLabel').value.trim();
+  if(!nome){ toast('Digite o nome do evento'); return; }
+  const config = loadConfig();
+  const novo = { id: uid(), nome, cultos: [] };
+  if(cultoLabel) novo.cultos.push({ id: uid(), label: cultoLabel });
+  config.eventos.push(novo);
+  saveConfig(config);
+  closeModal('modalEvento');
+  renderEventosPage();
+  toast('Evento criado');
+});
+document.getElementById('btnSalvarCulto').addEventListener('click', ()=>{
+  const eventoId = document.getElementById('fCultoEventoId').value;
+  const label = document.getElementById('fCultoLabel2').value.trim();
+  if(!label){ toast('Digite a descrição do culto'); return; }
+  const config = loadConfig();
+  const ev = config.eventos.find(e=>e.id===eventoId);
+  ev.cultos.push({ id: uid(), label });
+  saveConfig(config);
+  closeModal('modalCulto');
+  renderEventosPage();
+  toast('Culto adicionado');
+});
+
+/* ---------------- COLABORADORES PAGE ---------------- */
+function renderColabTable(){
+  const participantes = loadParticipantes();
+  const q = (document.getElementById('searchColab').value || '').toLowerCase();
+  const tbody = document.querySelector('#tblColab tbody');
+  const filtered = participantes.filter(p=> !q || p.nome.toLowerCase().includes(q) || (p.equipe||'').toLowerCase().includes(q) || (p.lider||'').toLowerCase().includes(q));
+  if(filtered.length===0){
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--text-muted);text-align:center;padding:30px;">Nenhum colaborador cadastrado.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(p=>`
+    <tr>
+      <td>${escapeHtml(p.nome)}${(p.filhos||[]).length ? ` <span class="tag tag-ok" title="Filhos no Departamento Infantil" style="margin:0 0 0 6px;">${p.filhos.length} ${p.filhos.length===1?'filho':'filhos'}</span>` : ''}</td>
+      <td data-label="Equipe">${escapeHtml(p.equipe||'—')}</td>
+      <td data-label="Líder">${escapeHtml(p.lider||'—')}</td>
+      <td data-label="Evento">${escapeHtml(eventoNome(p.eventoId))}</td>
+      <td class="actions">
+        <button class="link-btn" data-edit="${p.id}">Editar</button>
+        <button class="link-btn danger" data-del="${p.id}">Excluir</button>
+      </td>
+    </tr>`).join('');
+
+  tbody.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
+    if(!confirm('Excluir este colaborador?')) return;
+    if(db && b.dataset.del.startsWith('f_')) db.collection('lanches_inscricoes').doc(b.dataset.del.slice(2)).delete().catch(console.error);
+    let p = loadParticipantes();
+    p = p.filter(x=>x.id!==b.dataset.del);
+    saveParticipantes(p);
+    renderColabTable();
+    toast('Colaborador excluído');
+  }));
+  tbody.querySelectorAll('[data-edit]').forEach(b=>b.addEventListener('click', ()=>{
+    const p = loadParticipantes().find(x=>x.id===b.dataset.edit);
+    openColabModal(p);
+  }));
+}
+document.getElementById('searchColab').addEventListener('input', renderColabTable);
+
+let editingColabId = null;
+function openColabModal(p){
+  populateEventoSelect(document.getElementById('fEvento'), true);
+  if(p){
+    editingColabId = p.id;
+    document.getElementById('modalColabTitle').textContent = 'Editar colaborador';
+    document.getElementById('fNome').value = p.nome;
+    document.getElementById('fEquipe').value = p.equipe||'';
+    document.getElementById('fLider').value = p.lider||'';
+    document.getElementById('fEvento').value = p.eventoId||'';
+  } else {
+    editingColabId = null;
+    document.getElementById('modalColabTitle').textContent = 'Adicionar colaborador';
+    document.getElementById('fNome').value='';
+    document.getElementById('fEquipe').value='';
+    document.getElementById('fLider').value='';
+  }
+  openModal('modalColab');
+}
+document.getElementById('btnNovoColab').addEventListener('click', ()=>{
+  if(loadConfig().eventos.length===0){
+    toast('Cadastre um evento primeiro');
+    goToPage('eventos');
+    return;
+  }
+  openColabModal(null);
+});
+document.getElementById('btnSalvarColab').addEventListener('click', ()=>{
+  const nome = document.getElementById('fNome').value.trim();
+  const equipe = document.getElementById('fEquipe').value.trim();
+  const lider = document.getElementById('fLider').value.trim();
+  const eventoId = document.getElementById('fEvento').value;
+  if(!nome){ toast('Digite o nome'); return; }
+  if(!eventoId){ toast('Selecione um evento'); return; }
+  let participantes = loadParticipantes();
+  if(editingColabId){
+    const p = participantes.find(x=>x.id===editingColabId);
+    p.nome=nome; p.equipe=equipe; p.lider=lider; p.eventoId=eventoId;
+  } else {
+    participantes.push({ id: uid(), nome, equipe, lider, eventoId });
+  }
+  saveParticipantes(participantes);
+  closeModal('modalColab');
+  renderColabTable();
+  toast('Colaborador salvo');
+});
+
+/* ---------------- CSV IMPORT ---------------- */
+document.getElementById('btnImportCsv').addEventListener('click', ()=>{
+  document.getElementById('fileCsv').click();
+});
+document.getElementById('fileCsv').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (evt)=>{
+    try{
+      const count = importCsv(evt.target.result);
+      toast(`${count} colaborador(es) importado(s)`);
+      renderColabTable();
+    }catch(err){
+      alert('Erro ao importar CSV: '+err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+  e.target.value = '';
+});
+function parseCsvLine(line, delim){
+  // suporte simples a valores entre aspas
+  const result = [];
+  let cur = '', inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"'){ inQuotes = !inQuotes; continue; }
+    if(ch === delim && !inQuotes){ result.push(cur); cur=''; continue; }
+    cur += ch;
+  }
+  result.push(cur);
+  return result.map(s=>s.trim());
+}
+function normalizeHeader(h){
+  // remove acentos, pontuação (ex: "nome:") e espaços, deixa minúsculo
+  return h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'').trim();
+}
+function importCsv(text){
+  // remove BOM (comum em CSV exportado do Excel) e normaliza quebras de linha
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
+  if(lines.length<2) throw new Error('Arquivo vazio ou sem dados');
+
+  // detecta o separador: Excel/Sheets em pt-BR costuma usar ";" em vez de ","
+  const firstLine = lines[0];
+  const delim = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+
+  const header = parseCsvLine(firstLine, delim).map(normalizeHeader);
+  const idxNome = header.indexOf('nome');
+  const idxEquipe = header.indexOf('equipe');
+  const idxLider = header.indexOf('lider');
+  const idxEvento = header.indexOf('evento');
+  if(idxNome<0) throw new Error(`Coluna "nome" não encontrada no CSV. Cabeçalho lido: ${header.join(', ')}`);
+
+  const config = loadConfig();
+  const participantes = loadParticipantes();
+  let count = 0;
+
+  for(let i=1;i<lines.length;i++){
+    const cols = parseCsvLine(lines[i], delim);
+    const nome = cols[idxNome];
+    if(!nome) continue;
+    const equipe = idxEquipe>=0 ? cols[idxEquipe] : '';
+    const lider = idxLider>=0 ? cols[idxLider] : '';
+    const eventoNomeStr = idxEvento>=0 ? cols[idxEvento] : '';
+
+    let eventoId;
+    if(eventoNomeStr){
+      const alvo = normalizeHeader(eventoNomeStr.replace(/\s+/g,' '));
+      let ev = config.eventos.find(e=> normalizeHeader(e.nome.replace(/\s+/g,' ')) === alvo);
+      if(!ev){
+        ev = { id: uid(), nome: eventoNomeStr, cultos: [{id: uid(), label:'Culto Único'}] };
+        config.eventos.push(ev);
+      }
+      eventoId = ev.id;
+    } else {
+      // usa o primeiro evento existente, ou cria um genérico
+      if(config.eventos.length===0){
+        const ev = { id: uid(), nome: 'Evento Importado', cultos: [{id: uid(), label:'Culto Único'}] };
+        config.eventos.push(ev);
+      }
+      eventoId = config.eventos[0].id;
+    }
+    participantes.push({ id: uid(), nome, equipe, lider, eventoId });
+    count++;
+  }
+  saveConfig(config);
+  saveParticipantes(participantes);
+  return count;
+}
+document.getElementById('btnModeloCsv').addEventListener('click', ()=>{
+  const csv = 'nome,equipe,lider,evento\nAdenilza Simplicio,Recepção,Maria Souza,JPN - GLOBAL\nJoão Pedro,Louvor,Carlos Lima,JPN - GLOBAL\n';
+  downloadFile('modelo-colaboradores.csv', csv);
+});
+document.getElementById('btnRemoverDuplicados').addEventListener('click', ()=>{
+  const participantes = loadParticipantes();
+  const vistos = new Map(); // chave "nomeNormalizado|eventoId" -> id mantido
+  const manter = [];
+  const removidosIds = [];
+
+  participantes.forEach(p=>{
+    const chave = normalizeHeader(p.nome) + '|' + p.eventoId;
+    if(vistos.has(chave)){
+      removidosIds.push(p.id);
+    } else {
+      vistos.set(chave, p.id);
+      manter.push(p);
+    }
+  });
+
+  if(removidosIds.length===0){
+    toast('Nenhum duplicado encontrado');
+    return;
+  }
+  if(!confirm(`Encontrado(s) ${removidosIds.length} colaborador(es) duplicado(s) (mesmo nome + mesmo evento). Manter só o primeiro de cada e remover o resto?`)) return;
+
+  saveParticipantes(manter);
+
+  // limpa check-ins órfãos que apontavam pros ids removidos
+  const checkins = loadCheckins();
+  const removidosSet = new Set(removidosIds);
+  Object.keys(checkins).forEach(key=>{
+    const pid = key.split('__')[2];
+    if(removidosSet.has(pid)) delete checkins[key];
+  });
+  saveCheckins(checkins);
+
+  renderColabTable();
+  toast(`${removidosIds.length} duplicado(s) removido(s)`);
+});
+/* ---------------- DEPARTAMENTO INFANTIL ---------------- */
+let inscricoesInfantil = []; // inscrições do formulário com Departamento Infantil = Sim (tempo real)
+function criancasDoEvento(eventoId){
+  const lista = [];
+  inscricoesInfantil.filter(v=>v.eventoId===eventoId).forEach(v=>{
+    (v.filhos||[]).forEach(f=>lista.push({...f, idadeNum: parseInt(f.idade,10), voluntario:v.nome, equipe:v.equipe||'', lider:v.lider||''}));
+  });
+  return lista.sort((a,b)=>(a.idadeNum-b.idadeNum) || a.nome.localeCompare(b.nome,'pt-BR'));
+}
+function renderInfantil(){
+  const sel = document.getElementById('infEvento');
+  const eventos = loadConfig().eventos;
+  const prev = sel.value;
+  sel.innerHTML = eventos.map(e=>`<option value="${e.id}">${escapeHtml(e.nome)}</option>`).join('');
+  sel.value = eventos.some(e=>e.id===prev) ? prev : (eventos[eventos.length-1]?.id || '');
+  const todas = criancasDoEvento(sel.value);
+  document.getElementById('infTotal').textContent = todas.length;
+  document.getElementById('infVolunt').textContent = new Set(todas.map(c=>c.voluntario)).size;
+  document.getElementById('infCond').textContent = todas.filter(c=>c.condicaoAtipica==='Sim').length;
+  document.getElementById('infAlerg').textContent = todas.filter(c=>c.alergia==='Sim').length;
+
+  const q = nomeKey(document.getElementById('searchInfantil').value||'');
+  const lista = todas.filter(c=> !q || nomeKey([c.nome,c.voluntario,c.equipe,c.lider,(c.condicoes||[]).join(' '),c.alergiaQual||''].join(' ')).includes(q));
+  const box = document.getElementById('infantilList');
+  if(!lista.length){
+    box.innerHTML = `<div class="list"><div class="empty-state">${todas.length ? 'Nenhuma criança encontrada nessa busca.' : 'Nenhuma criança cadastrada neste evento ainda.<br>Elas aparecem aqui assim que os voluntários responderem o chat.'}</div></div>`;
+    return;
+  }
+  const grupos = {};
+  lista.forEach(c=>{ const k = isNaN(c.idadeNum) ? '?' : c.idadeNum; (grupos[k] = grupos[k] || []).push(c); });
+  const titulo = k => k==='?' ? 'Idade não informada' : (+k===0 ? 'Menos de 1 ano' : (+k===1 ? '1 ano' : `${k} anos`));
+  box.innerHTML = Object.keys(grupos).sort((a,b)=>(a==='?')-(b==='?') || a-b).map(k=>`
+    <div class="inf-grupo">
+      <h3>${titulo(k)} <small>${grupos[k].length} ${grupos[k].length===1?'criança':'crianças'}</small></h3>
+      <div class="inf-scroll cards-mobile"><table>
+        <thead><tr><th>Criança</th><th>Sexo</th><th>Condição atípica / acompanhamento</th><th>Alergia ou restrição</th><th>Responsável (voluntário)</th></tr></thead>
+        <tbody>${grupos[k].map(c=>`
+          <tr>
+            <td><div class="inf-nome">${escapeHtml(c.nome)}</div></td>
+            <td data-label="Sexo">${escapeHtml(c.sexo||'—')}</td>
+            <td data-label="Condição atípica / acompanhamento">${c.condicaoAtipica==='Sim' ? (c.condicoes||[]).map(x=>`<span class="tag tag-alerta">${escapeHtml(x)}</span>`).join('') || '<span class="tag tag-alerta">Sim</span>' : '<span class="tag tag-ok">Não</span>'}</td>
+            <td data-label="Alergia ou restrição">${c.alergia==='Sim' ? `<span class="tag tag-alergia">${escapeHtml(c.alergiaQual||'Sim')}</span>` : '<span class="tag tag-ok">Não</span>'}</td>
+            <td data-label="Responsável"><div class="inf-nome">${escapeHtml(c.voluntario)}</div><div class="inf-sub">${escapeHtml([c.equipe, c.lider && 'Líder: '+c.lider].filter(Boolean).join(' · '))}</div></td>
+          </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`).join('');
+}
+function exportarInfantil(){
+  const eventoId = document.getElementById('infEvento').value;
+  const lista = criancasDoEvento(eventoId);
+  if(!lista.length){ toast('Nenhuma criança cadastrada neste evento'); return; }
+  const q = s => '"' + String(s ?? '').replace(/"/g,'""') + '"';
+  const linhas = [['Idade','Criança','Sexo','Condição atípica','Quais condições','Alergia/Restrição','Qual alergia','Voluntário','Equipe','Líder'].map(q).join(';')];
+  lista.forEach(c=>linhas.push([c.idade, c.nome, c.sexo, c.condicaoAtipica, (c.condicoes||[]).join(', '), c.alergia, c.alergiaQual||'', c.voluntario, c.equipe, c.lider].map(q).join(';')));
+  const nomeEv = (loadConfig().eventos.find(e=>e.id===eventoId)?.nome || 'evento').replace(/[^\w\-]+/g,'-');
+  downloadFile(`departamento-infantil-${nomeEv}.csv`, '﻿' + linhas.join('\n'));
+  toast(`${lista.length} criança(s) exportada(s)`);
+}
+document.getElementById('btnExportInfantil').addEventListener('click', exportarInfantil);
+document.getElementById('infEvento').addEventListener('change', renderInfantil);
+document.getElementById('searchInfantil').addEventListener('input', renderInfantil);
+function downloadFile(filename, content){
+  const blob = new Blob([content], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------- INIT ---------------- */
+/* evento de exemplo removido: os eventos agora vêm do Firebase ou são criados em Cadastros > Eventos */
+renderPainel();
+renderCheckinFilters();
+
+/* ---------------- LIMPAR TODOS OS COLABORADORES ---------------- */
+document.getElementById('btnLimparColab').addEventListener('click', async ()=>{
+  const n = loadParticipantes().length;
+  if(!n){ toast('Não há colaboradores'); return; }
+  if(!confirm(`Apagar TODOS os ${n} colaboradores, check-ins e histórico? Isso não pode ser desfeito.`)) return;
+  saveParticipantes([]); saveCheckins({}); saveHistorico([]);
+  if(db){ try{ const s = await db.collection('lanches_inscricoes').get(); await Promise.all(s.docs.map(d=>d.ref.delete())); }catch(e){ console.error(e); } }
+  renderColabTable(); renderPainel(); renderCheckinList();
+  toast('Lista limpa');
+});
+
+/* ---------------- RECEBE INSCRIÇÕES DO FORMULÁRIO ---------------- */
+function iniciarInscricoes(){
+  if(!db) return;
+  let primeira = true;
+  db.collection('lanches_inscricoes').onSnapshot(snap=>{
+    inscricoesInfantil = snap.docs.map(d=>d.data()).filter(v=>v.departamentoInfantil==='Sim' && (v.filhos||[]).length);
+    if(document.getElementById('page-infantil').classList.contains('active')) renderInfantil();
+    const parts = loadParticipantes();
+    const eventos = loadConfig().eventos;
+    let novos = 0, ultimo = '';
+    snap.docChanges().forEach(ch=>{
+      if(ch.type!=='added') return;
+      const v = ch.doc.data(); const id = 'f_'+ch.doc.id;
+      if(!eventos.some(e=>e.id===v.eventoId)) return;
+      if(parts.some(p=>p.id===id)) return;
+      if(parts.some(p=>p.eventoId===v.eventoId && nomeKey(p.nome)===nomeKey(v.nome))) return;
+      parts.push({id, nome:v.nome, equipe:v.equipe||'', lider:v.lider||'', eventoId:v.eventoId, cultoIds:v.cultoIds||[], departamentoInfantil:v.departamentoInfantil||'', filhos:v.filhos||[]});
+      novos++; ultimo = v.nome;
+    });
+    if(novos){
+      saveParticipantes(parts);
+      if(!primeira) toast(novos===1 ? `Nova inscrição: ${ultimo}` : `${novos} novas inscrições`);
+      renderPainel(); renderCheckinList(); renderColabTable();
+    }
+    primeira = false;
+  }, err=>console.error(err));
+}
+let _inscricoesIniciadas = false;
+if(auth){
+  auth.onAuthStateChanged(async user=>{
+    if(user && !(await temAcesso(user))){
+      document.getElementById('modalLogin').style.display = 'flex';
+      document.getElementById('loginErr').textContent = 'Seu usuário não está liberado. Peça ao administrador para liberar o seu acesso.';
+      try{ await auth.signOut(); }catch(e){}
+      return;
+    }
+    document.getElementById('modalLogin').style.display = user ? 'none' : 'flex';
+    if(user) atualizarUsuarioUI(user);
+    if(user && !_inscricoesIniciadas){
+      _inscricoesIniciadas = true;
+      (async ()=>{
+        try{
+          const cfg = loadConfig();
+          if(cfg.eventos.length===0){
+            const d = await db.collection('lanches_config').doc('publico').get();
+            const remotos = d.exists ? (d.data().eventos||[]) : [];
+            if(remotos.length){
+              localStorage.setItem(LS_CONFIG, JSON.stringify({eventos:remotos}));
+              renderPainel(); renderCheckinFilters();
+              try{ renderEventosPage(); }catch(e){}
+            }
+          }
+        }catch(e){ console.error(e); }
+        publicar(); iniciarInscricoes();
+      })();
+    }
+  });
+}
+document.getElementById('btnLogin').addEventListener('click', async ()=>{
+  const err = document.getElementById('loginErr'); err.textContent = '';
+  if(!auth){
+    const file = location.protocol === 'file:' ? ' Você abriu o arquivo direto do computador (file://): hospede em https ou use localhost.' : '';
+    err.textContent = 'Firebase não iniciou: ' + (_initErr || 'motivo desconhecido') + '.' + file;
+    return;
+  }
+  try{ await auth.signInWithEmailAndPassword(document.getElementById('loginEmail').value.trim(), document.getElementById('loginSenha').value); }
+  catch(e){
+    console.error(e);
+    const m = {
+      'auth/invalid-credential':'E-mail ou senha incorretos.',
+      'auth/wrong-password':'E-mail ou senha incorretos.',
+      'auth/user-not-found':'Esse e-mail não está cadastrado no Firebase Authentication.',
+      'auth/invalid-email':'E-mail inválido.',
+      'auth/operation-not-allowed':'O login por E-mail/Senha não está ativado no Firebase (Authentication > Método de login).',
+      'auth/operation-not-supported-in-this-environment':'O Firebase Auth não funciona com o arquivo aberto direto do computador (file://). Abra por um endereço https (ex.: GitHub Pages) ou localhost.',
+      'auth/unauthorized-domain':'Este domínio não está autorizado no Firebase (Authentication > Configurações > Domínios autorizados).',
+      'auth/network-request-failed':'Falha de rede. Verifique a internet.',
+      'auth/too-many-requests':'Muitas tentativas. Aguarde alguns minutos.'
+    };
+    err.textContent = (m[e.code] || 'Erro ao entrar.') + ' [' + (e.code||e.message) + ']';
+  }
+});
+/* ---------------- USUÁRIOS ---------------- */
+// Administrador: único que cadastra/remove usuários e limpa a lista. Os demais só fazem check-in.
+const ADMINS = ['djonhwesley@verbodavida.com'];
+function iniciaisUsuario(u){
+  const base = (u.displayName || u.email || '?').trim();
+  const partes = base.split(/[\s@._-]+/).filter(Boolean);
+  return ((partes[0]||'?')[0] + (partes.length>1 ? partes[1][0] : '')).toUpperCase();
+}
+function ehAdmin(u){ return !!u && ADMINS.map(e=>e.toLowerCase()).includes((u.email||'').toLowerCase()); }
+// tem acesso = é administrador OU está na lista de liberados (coleção lanches_usuarios)
+async function temAcesso(u){
+  if(ehAdmin(u)) return true;
+  try{
+    const d = await db.collection('lanches_usuarios').doc((u.email||'').toLowerCase()).get();
+    return d.exists;
+  }catch(e){ console.error(e); return false; }
+}
+async function carregarUsuarios(){
+  const box = document.getElementById('listaUsuarios');
+  box.textContent = 'Carregando...';
+  try{
+    const snap = await db.collection('lanches_usuarios').get();
+    if(snap.empty){ box.textContent = 'Nenhum usuário liberado ainda.'; return; }
+    box.innerHTML = '';
+    snap.docs.sort((a,b)=>(a.data().nome||'').localeCompare(b.data().nome||'')).forEach(d=>{
+      const v = d.data();
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-2);font-size:13.5px;';
+      row.innerHTML = '<div style="flex:1;min-width:0;"><div style="font-weight:600;color:var(--ink);">'+escapeHtml(v.nome||'—')+'</div><div style="color:var(--text-muted);word-break:break-all;">'+escapeHtml(d.id)+'</div></div>';
+      const b = document.createElement('button');
+      b.className = 'btn'; b.textContent = 'Remover'; b.style.color = '#b3261e';
+      b.addEventListener('click', async ()=>{
+        if(!confirm('Remover o acesso de '+(v.nome||d.id)+'?')) return;
+        try{ await db.collection('lanches_usuarios').doc(d.id).delete(); toast('Acesso removido'); carregarUsuarios(); }
+        catch(e){ console.error(e); toast('Erro ao remover'); }
+      });
+      row.appendChild(b); box.appendChild(row);
+    });
+  }catch(e){ console.error(e); box.textContent = 'Erro ao carregar a lista.'; }
+}
+function atualizarUsuarioUI(user){
+  if(!user) return;
+  document.getElementById('userInitials').textContent = iniciaisUsuario(user);
+  document.getElementById('uNome').textContent = user.displayName || 'Usuário';
+  document.getElementById('uEmail').textContent = user.email || '';
+  const admin = ehAdmin(user);
+  document.getElementById('boxNovoUsuario').style.display = admin ? 'block' : 'none';
+  document.getElementById('btnLimparColab').style.display = admin ? '' : 'none';
+}
+document.getElementById('userInitials').addEventListener('click', ()=>{
+  if(auth && auth.currentUser){ atualizarUsuarioUI(auth.currentUser); openModal('modalUsuario'); if(ehAdmin(auth.currentUser)) carregarUsuarios(); }
+});
+document.getElementById('btnBackup').addEventListener('click', ()=>{
+  const dados = {c:localStorage.getItem(LS_CONFIG), p:localStorage.getItem(LS_PARTICIPANTES), k:localStorage.getItem(LS_CHECKINS), h:localStorage.getItem(LS_HISTORICO)};
+  const blob = new Blob([JSON.stringify(dados)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'backup-lanches-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click(); URL.revokeObjectURL(a.href);
+});
+document.getElementById('btnRestaurar').addEventListener('click', ()=>document.getElementById('fileRestaurar').click());
+document.getElementById('fileRestaurar').addEventListener('change', async e=>{
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const d = JSON.parse(await f.text());
+    if(!d.c && !d.p) throw new Error('arquivo sem dados');
+    if(!confirm('Restaurar este backup? Os dados atuais deste aparelho serão substituídos.')) return;
+    if(d.c) localStorage.setItem(LS_CONFIG, d.c);
+    if(d.p) localStorage.setItem(LS_PARTICIPANTES, d.p);
+    if(d.k) localStorage.setItem(LS_CHECKINS, d.k);
+    if(d.h) localStorage.setItem(LS_HISTORICO, d.h);
+    alert('Backup restaurado! A página vai recarregar.');
+    location.reload();
+  }catch(err){ console.error(err); alert('Arquivo de backup inválido.'); }
+  e.target.value = '';
+});
+document.getElementById('btnSair').addEventListener('click', async ()=>{
+  try{ await auth.signOut(); }catch(e){ console.error(e); }
+  location.reload();
+});
+document.getElementById('btnNovoUsuario').addEventListener('click', async ()=>{
+  const msg = document.getElementById('nuMsg');
+  const nome = document.getElementById('nuNome').value.trim();
+  const email = document.getElementById('nuEmail').value.trim();
+  const senha = document.getElementById('nuSenha').value;
+  const cor = ok => msg.style.color = ok ? 'var(--green)' : '#b3261e';
+  if(!nome || !email || senha.length<6){ cor(false); msg.textContent = 'Preencha nome, e-mail e uma senha de pelo menos 6 caracteres.'; return; }
+  // usa um app secundário para NÃO desconectar você ao criar o novo usuário
+  let sec = null;
+  try{
+    sec = firebase.apps.find(a=>a.name==='secundario') || firebase.initializeApp(firebaseConfig,'secundario');
+    const cred = await sec.auth().createUserWithEmailAndPassword(email, senha);
+    await cred.user.updateProfile({displayName:nome});
+    await sec.auth().signOut();
+    await db.collection('lanches_usuarios').doc(email.toLowerCase()).set({nome, email:email.toLowerCase(), criadoPor:auth.currentUser.email, criadoEm:Date.now()});
+    cor(true); msg.textContent = 'Usuário cadastrado e liberado! Ele já pode entrar com esse e-mail e senha.';
+    carregarUsuarios();
+    document.getElementById('nuNome').value=''; document.getElementById('nuEmail').value=''; document.getElementById('nuSenha').value='';
+  }catch(e){
+    console.error(e);
+    if(e.code==='auth/email-already-in-use'){
+      try{
+        await db.collection('lanches_usuarios').doc(email.toLowerCase()).set({nome, email:email.toLowerCase(), criadoPor:auth.currentUser.email, criadoEm:Date.now()});
+        cor(true); msg.textContent = 'Esse e-mail já tinha conta. Acesso liberado novamente (vale a senha que a pessoa já tinha).';
+        carregarUsuarios();
+      }catch(e2){ console.error(e2); cor(false); msg.textContent = 'Não foi possível liberar: '+(e2.code||e2.message); }
+      try{ if(sec) await sec.auth().signOut(); }catch(_){}
+      return;
+    }
+    const m = {
+      'auth/email-already-in-use':'Esse e-mail já está cadastrado.',
+      'auth/invalid-email':'E-mail inválido.',
+      'auth/weak-password':'Senha fraca. Use pelo menos 6 caracteres.',
+      'auth/operation-not-allowed':'Login por E-mail/Senha não está ativado no Firebase.'
+    };
+    cor(false); msg.textContent = (m[e.code]||'Erro ao cadastrar.') + ' ['+(e.code||e.message)+']';
+    try{ if(sec) await sec.auth().signOut(); }catch(_){}
+  }
+});
+
+document.getElementById('loginSenha').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('btnLogin').click(); });
+</script>
+</body>
+</html>
